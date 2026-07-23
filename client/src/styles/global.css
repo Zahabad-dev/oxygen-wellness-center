@@ -218,6 +218,16 @@ thead th { font-family: var(--font-mono); font-size: 10.5px; text-transform: upp
   position: absolute; inset: 0; z-index: 1;
   background: linear-gradient(0deg, rgba(250, 247, 241, 0.96) 0%, rgba(250, 247, 241, 0.62) 42%, rgba(250, 247, 241, 0.12) 78%, rgba(250, 247, 241, 0.02) 100%);
 }
+@media (max-width: 640px) {
+  /* En una pantalla angosta y alta, "cover" hace zoom sobre la foto y puede mostrar
+     una porcion dominada por tonos calidos (piel, mat) sin importar el overlay de
+     escritorio. Aqui el velo es mucho mas opaco para que la foto quede como textura
+     de fondo, no como fuente principal de color. */
+  .hero-overlay {
+    background: linear-gradient(160deg, rgba(250, 247, 241, 0.93) 0%, rgba(250, 247, 241, 0.9) 55%, rgba(250, 247, 241, 0.8) 100%);
+  }
+  .hero-bg { background-position: center 18%; }
+}
 .hero-inner { position: relative; z-index: 2; max-width: 640px; }
 .hero-eyebrow {
   font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.14em; text-transform: uppercase;
