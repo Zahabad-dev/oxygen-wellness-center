@@ -57,7 +57,7 @@ export default function Checkin() {
       try {
         const data = await apiPost('/staff/checkin', { qrToken, claseId: Number(claseId), forzar });
         vibrar(60);
-        setResultado({ tipo: 'success', texto: data.nombre });
+        setResultado({ tipo: 'success', titulo: '¡Completado!', texto: data.nombre });
         setManualToken('');
         resumeTimerRef.current = setTimeout(reanudarEscaneo, COOLDOWN_MS);
       } catch (err) {
@@ -144,9 +144,10 @@ export default function Checkin() {
 
         {resultado && (
           <div className="scanner-result">
-            <span className="scanner-result-icon" aria-hidden="true">
+            <span className="scanner-result-icon pop" aria-hidden="true">
               {resultado.tipo === 'success' ? '✓' : resultado.tipo === 'warning' ? '!' : '✕'}
             </span>
+            {resultado.titulo && <p className="scanner-result-title">{resultado.titulo}</p>}
             <p className="scanner-result-text">{resultado.texto}</p>
             {resultado.tipo === 'warning' && resultado.qrToken ? (
               <div style={{ display: 'flex', gap: 8 }}>
