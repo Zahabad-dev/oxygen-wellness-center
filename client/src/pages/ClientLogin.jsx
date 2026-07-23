@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { apiPost } from '../lib/apiClient.js';
+import PasswordInput from '../components/PasswordInput.jsx';
 
 export default function ClientLogin() {
   const navigate = useNavigate();
@@ -35,7 +36,7 @@ export default function ClientLogin() {
         </div>
         <div className="field">
           <label htmlFor="password">Contraseña</label>
-          <input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+          <PasswordInput id="password" required value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
         </div>
         {error && <div className="alert error">{error}</div>}
         <button className="btn btn-primary btn-block" type="submit" disabled={enviando}>
