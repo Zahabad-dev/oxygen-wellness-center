@@ -124,23 +124,23 @@ export default function Clientes() {
         </form>
       )}
 
-      <table>
+      <table className="responsive">
         <thead>
           <tr>
-            <th>Nombre</th><th>WhatsApp</th><th>Correo</th><th>Clases tomadas</th><th>Reservas</th><th>Registrado</th><th>Cuenta</th><th></th>
+            <th>Nombre</th><th>WhatsApp</th><th>Correo</th><th>Clases tomadas</th><th>Reservas</th><th>Registrado</th><th>Cuenta</th><th>Acciones</th>
           </tr>
         </thead>
         <tbody>
           {clientes.map((c) => (
             <tr key={c.id}>
-              <td>{c.nombre}</td>
-              <td>{c.whatsapp}</td>
-              <td>{c.email || '—'}</td>
-              <td><span className="pill success">{c.clases_tomadas}</span></td>
-              <td><span className="pill accent">{c.reservas_total}</span></td>
-              <td>{new Date(c.created_at).toLocaleDateString('es-MX')}</td>
-              <td>{c.tiene_acceso ? <span className="pill success">tiene acceso</span> : <span className="pill warning">sin acceso</span>}</td>
-              <td style={{ display: 'flex', gap: 6 }}>
+              <td data-label="Nombre">{c.nombre}</td>
+              <td data-label="WhatsApp">{c.whatsapp}</td>
+              <td data-label="Correo">{c.email || '—'}</td>
+              <td data-label="Clases tomadas"><span className="pill success">{c.clases_tomadas}</span></td>
+              <td data-label="Reservas"><span className="pill accent">{c.reservas_total}</span></td>
+              <td data-label="Registrado">{new Date(c.created_at).toLocaleDateString('es-MX')}</td>
+              <td data-label="Cuenta">{c.tiene_acceso ? <span className="pill success">tiene acceso</span> : <span className="pill warning">sin acceso</span>}</td>
+              <td data-label="Acciones" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                 <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => crearAcceso(c)}>
                   {c.tiene_acceso ? 'Cambiar contraseña' : 'Crear acceso'}
                 </button>
