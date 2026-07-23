@@ -23,7 +23,7 @@ export default function AgendaHoy() {
   }, []);
 
   return (
-    <div>
+    <div className="page">
       <span className="eyebrow">Hoy</span>
       <h1>Agenda de hoy</h1>
       <p style={{ color: 'var(--ink-soft)' }}>

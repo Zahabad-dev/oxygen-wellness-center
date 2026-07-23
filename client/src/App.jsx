@@ -40,7 +40,7 @@ export default function App() {
       <AuthProvider>
         <div className="shell">
           <Topbar />
-          <main className="content">
+          <main>
             <Suspense fallback={<div className="page-loading">Cargando…</div>}>
               <Routes>
                 <Route path="/" element={<Catalogo />} />

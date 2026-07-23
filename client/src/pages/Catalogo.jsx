@@ -1,14 +1,19 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { apiGet } from '../lib/apiClient.js';
+import { disciplineTheme } from '../lib/disciplineTheme.js';
+import { getWeekDays } from '../lib/dates.js';
+import BookingModal from '../components/BookingModal.jsx';
+
+const DIAS = getWeekDays(7);
 
 export default function Catalogo() {
   const [disciplinas, setDisciplinas] = useState([]);
   const [clases, setClases] = useState([]);
   const [disciplinaId, setDisciplinaId] = useState(null);
-  const [fecha, setFecha] = useState('');
+  const [dia, setDia] = useState(DIAS[0].iso);
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(true);
+  const [modalClaseId, setModalClaseId] = useState(null);
 
   useEffect(() => {
     apiGet('/disciplinas').then(setDisciplinas).catch(() => {});
@@ -16,82 +21,157 @@ export default function Catalogo() {
 
   useEffect(() => {
     setCargando(true);
-    const params = new URLSearchParams();
+    const params = new URLSearchParams({ fecha: dia });
     if (disciplinaId) params.set('disciplina', disciplinaId);
-    if (fecha) params.set('fecha', fecha);
     apiGet(`/clases?${params.toString()}`)
       .then((data) => { setClases(data); setError(''); })
       .catch((err) => setError(err.message))
       .finally(() => setCargando(false));
-  }, [disciplinaId, fecha]);
+  }, [disciplinaId, dia]);
 
-  const disciplinasPorId = useMemo(
-    () => Object.fromEntries(disciplinas.map((d) => [d.id, d])),
-    [disciplinas]
-  );
+  function elegirDisciplina(id) {
+    setDisciplinaId((current) => (current === id ? null : id));
+    document.getElementById('calendario')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   return (
-    <div>
-      <span className="eyebrow">Oxygen Wellness Center</span>
-      <h1>Clases disponibles</h1>
-      <p style={{ color: 'var(--ink-soft)' }}>Reserva tu lugar en segundos — solo necesitas tu nombre y tu WhatsApp.</p>
+    <div className="landing">
+      {/* ---------- Hero ---------- */}
+      <section className="hero" style={{ backgroundImage: "url('/images/hero.jpg')" }}>
+        <div className="hero-inner">
+          <span className="hero-eyebrow">Oxygen Wellness Center</span>
+          <h1 className="hero-title">Tu espacio para moverte,<br />respirar y <em>pertenecer</em>.</h1>
+          <p className="hero-sub">
+            Functional Training, Pilates, Yoga, Barre y más — reserva tu lugar en segundos,
+            sin crear una cuenta.
+          </p>
+          <div className="hero-actions">
+            <a href="#calendario" className="btn btn-primary btn-lg">Reservar ahora</a>
+            <a href="#disciplinas" className="btn btn-secondary btn-lg">Ver disciplinas</a>
+          </div>
+        </div>
+      </section>
 
-      <div className="chip-row">
-        <span
-          className={`chip ${!disciplinaId ? 'active' : ''}`}
-          onClick={() => setDisciplinaId(null)}
-        >
-          Todas
-        </span>
-        {disciplinas.map((d) => (
-          <span
-            key={d.id}
-            className={`chip ${disciplinaId === d.id ? 'active' : ''}`}
-            onClick={() => setDisciplinaId(d.id)}
-          >
-            <span className="disc-dot" style={{ background: d.color, marginRight: 6 }} />
-            {d.nombre}
-          </span>
-        ))}
-        <input
-          type="date"
-          value={fecha}
-          onChange={(e) => setFecha(e.target.value)}
-          style={{ border: '1px solid var(--line)', borderRadius: 100, padding: '5px 12px', fontSize: 13 }}
-        />
-      </div>
+      {/* ---------- Disciplinas ---------- */}
+      <section id="disciplinas" className="disciplines">
+        <div className="section-inner">
+          <div className="section-head">
+            <span className="eyebrow">Disciplinas</span>
+            <h2>Encuentra tu ritmo</h2>
+            <p>Cada disciplina tiene su propio color en el calendario — elige una para filtrar, o reserva directo.</p>
+          </div>
+          <div className="discipline-strip">
+            {disciplinas.map((d) => {
+              const theme = disciplineTheme(d.nombre);
+              return (
+                <button
+                  key={d.id}
+                  className={`discipline-card ${disciplinaId === d.id ? 'active' : ''}`}
+                  onClick={() => elegirDisciplina(d.id)}
+                >
+                  <div className="thumb" style={{ backgroundImage: `url('${theme.image}')` }} />
+                  <div className="label">
+                    <span className="disc-dot" style={{ background: theme.color }} />
+                    {d.nombre}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
 
-      {error && <div className="alert error">{error}</div>}
-      {cargando && <div className="page-loading">Cargando clases…</div>}
+      {/* ---------- Calendario ---------- */}
+      <section id="calendario" className="calendar-section">
+        <div className="section-inner">
+          <div className="section-head">
+            <span className="eyebrow">Calendario</span>
+            <h2>Reserva tu clase</h2>
+            <p>Elige el día y, si quieres, filtra por disciplina.</p>
+          </div>
 
-      {!cargando && !error && clases.length === 0 && (
-        <div className="card">No hay clases programadas con esos filtros por ahora.</div>
-      )}
+          <div className="day-tabs">
+            {DIAS.map((d) => (
+              <button
+                key={d.iso}
+                className={`day-tab ${dia === d.iso ? 'active' : ''} ${d.isToday ? 'today' : ''}`}
+                onClick={() => setDia(d.iso)}
+              >
+                <span className="dow">{d.isToday ? 'Hoy' : d.dow}</span>
+                <span className="num">{d.num}</span>
+              </button>
+            ))}
+          </div>
 
-      <div className="grid cols-2">
-        {clases.map((c) => {
-          const disciplina = disciplinasPorId[c.disciplina_id];
-          const porcentaje = Math.min(100, Math.round((c.confirmadas / c.capacidad_maxima) * 100));
-          const lleno = c.cupoDisponible <= 0;
-          return (
-            <Link key={c.id} to={`/clase/${c.id}`} className="card" style={{ textDecoration: 'none', color: 'inherit' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                <span className="disc-dot" style={{ background: c.disciplina_color || disciplina?.color }} />
-                <strong>{c.disciplina_nombre}</strong>
-                {c.nivel && <span className="pill accent">{c.nivel}</span>}
-              </div>
-              <p style={{ margin: '0 0 4px', fontSize: 13.5 }}>
-                {c.coach_nombre} · {c.fecha} · {c.hora_inicio?.slice(0, 5)} · {c.duracion_minutos} min
-              </p>
-              <p style={{ margin: '0 0 10px', fontSize: 13, color: 'var(--ink-faint)' }}>{c.salon_nombre}</p>
-              <div className="progress"><span style={{ width: `${porcentaje}%`, background: lleno ? 'var(--critical)' : undefined }} /></div>
-              <p style={{ margin: '6px 0 0', fontSize: 12.5, color: 'var(--ink-soft)' }}>
-                {lleno ? 'Clase llena — únete a la lista de espera' : `${c.cupoDisponible} lugares disponibles`}
-              </p>
-            </Link>
-          );
-        })}
-      </div>
+          <div className="chip-row">
+            <span className={`chip ${!disciplinaId ? 'active' : ''}`} onClick={() => setDisciplinaId(null)}>Todas</span>
+            {disciplinas.map((d) => (
+              <span
+                key={d.id}
+                className={`chip ${disciplinaId === d.id ? 'active' : ''}`}
+                onClick={() => setDisciplinaId(disciplinaId === d.id ? null : d.id)}
+              >
+                <span className="disc-dot" style={{ background: disciplineTheme(d.nombre).color, marginRight: 6 }} />
+                {d.nombre}
+              </span>
+            ))}
+          </div>
+
+          {error && <div className="alert error">{error}</div>}
+          {cargando && <div className="page-loading">Cargando clases…</div>}
+          {!cargando && !error && clases.length === 0 && (
+            <div className="empty-state">No hay clases programadas ese día con esos filtros.</div>
+          )}
+
+          <div className="class-grid">
+            {clases.map((c) => {
+              const theme = disciplineTheme(c.disciplina_nombre);
+              const lleno = c.cupoDisponible <= 0;
+              return (
+                <button
+                  key={c.id}
+                  className="class-card"
+                  style={{ '--card-color': c.disciplina_color || theme.color }}
+                  onClick={() => setModalClaseId(c.id)}
+                >
+                  <div className="top">
+                    <span className="hora">{c.hora_inicio?.slice(0, 5)}</span>
+                    {c.nivel && <span className="pill accent">{c.nivel}</span>}
+                  </div>
+                  <div className="disciplina">{c.disciplina_nombre}</div>
+                  <div className="meta">{c.coach_nombre} · {c.duracion_minutos} min · {c.salon_nombre}</div>
+                  <div className="progress"><span style={{ width: `${Math.min(100, Math.round((c.confirmadas / c.capacidad_maxima) * 100))}%`, background: lleno ? 'var(--critical)' : undefined }} /></div>
+                  <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--ink-soft)' }}>
+                    {lleno ? 'Llena — lista de espera' : `${c.cupoDisponible} lugares`}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ---------- Comunidad ---------- */}
+      <section className="community">
+        <div className="section-inner">
+          <img src="/images/comunidad.jpg" alt="Comunidad de Oxygen Wellness Center practicando juntas" />
+          <div>
+            <span className="eyebrow">Comunidad</span>
+            <h2>No entrenas sola.</h2>
+            <blockquote>“Un espacio para cuidarte, a tu ritmo, acompañada.”</blockquote>
+            <p style={{ color: 'var(--ink-soft)' }}>
+              En Oxygen creemos que cada cuerpo tiene su propio proceso. Nuestros coaches te acompañan
+              desde tu primera clase — sin presión, sin comparaciones, con técnica y calidez.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <footer className="site">
+        Oxygen Wellness Center · Reserva sin cuenta, tu QR es tuyo para siempre.
+      </footer>
+
+      <BookingModal claseId={modalClaseId} onClose={() => setModalClaseId(null)} />
     </div>
   );
 }

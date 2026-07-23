@@ -79,7 +79,7 @@ export default function Checkin() {
   }
 
   return (
-    <div style={{ maxWidth: 460, margin: '0 auto' }}>
+    <div className="page" style={{ maxWidth: 460, margin: '0 auto' }}>
       <span className="eyebrow">Recepción</span>
       <h1>Check-in</h1>
 

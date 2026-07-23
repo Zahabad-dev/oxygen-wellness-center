@@ -6,7 +6,7 @@ export default function ReservaConfirmada() {
   const { state } = useLocation();
 
   return (
-    <div style={{ maxWidth: 460, margin: '0 auto', textAlign: 'center' }}>
+    <div className="page" style={{ maxWidth: 460, margin: '0 auto', textAlign: 'center' }}>
       {state?.estado === 'lista_espera' ? (
         <div className="alert warning">
           Estás en la lista de espera (posición Nº{state.posicionEspera}). Te avisaremos si se libera un lugar.

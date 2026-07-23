@@ -26,7 +26,7 @@ export default function Login() {
   }
 
   return (
-    <div style={{ maxWidth: 380, margin: '40px auto 0' }}>
+    <div className="page" style={{ maxWidth: 380, margin: '0 auto' }}>
       <span className="eyebrow">Acceso staff</span>
       <h1>Oxygen Wellness Center</h1>
       <form onSubmit={onSubmit} className="card">

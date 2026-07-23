@@ -37,7 +37,7 @@ export default function DetalleClase() {
   const lleno = clase.cupoDisponible <= 0;
 
   return (
-    <div>
+    <div className="page">
       <Link to="/" style={{ fontSize: 13 }}>&larr; Volver al catálogo</Link>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '14px 0 4px' }}>
         <span className="disc-dot" style={{ background: clase.disciplina_color }} />
