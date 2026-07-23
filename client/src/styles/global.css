@@ -200,6 +200,9 @@ thead th { font-family: var(--font-mono); font-size: 10.5px; text-transform: upp
   overflow: hidden;
   padding: clamp(28px, 6vw, 56px) !important;
 }
+@media (max-width: 640px) {
+  .hero { min-height: min(66vh, 520px); }
+}
 .hero-bg {
   position: absolute; inset: -10% 0; z-index: 0;
   background-size: cover; background-position: center 28%;
