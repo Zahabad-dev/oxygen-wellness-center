@@ -60,18 +60,18 @@ export default function ClienteQrCard({ qrToken, heading }) {
       {data.proximasReservas?.length > 0 && (
         <div style={{ width: '100%', textAlign: 'left', marginTop: 10 }}>
           <h3 style={{ fontSize: 14 }}>Próximas reservas</h3>
-          <table>
+          <table className="responsive">
             <thead>
               <tr><th>Fecha</th><th>Hora</th><th>Disciplina</th><th>Coach</th><th>Estado</th></tr>
             </thead>
             <tbody>
               {data.proximasReservas.map((r) => (
                 <tr key={r.reserva_id}>
-                  <td>{r.fecha}</td>
-                  <td>{r.hora_inicio}</td>
-                  <td>{r.disciplina_nombre}</td>
-                  <td>{r.coach_nombre}</td>
-                  <td>
+                  <td data-label="Fecha">{r.fecha}</td>
+                  <td data-label="Hora">{r.hora_inicio}</td>
+                  <td data-label="Disciplina">{r.disciplina_nombre}</td>
+                  <td data-label="Coach">{r.coach_nombre}</td>
+                  <td data-label="Estado">
                     {r.estado === 'confirmada' ? (
                       <span className="pill success">confirmada</span>
                     ) : (

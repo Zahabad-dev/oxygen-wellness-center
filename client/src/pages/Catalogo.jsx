@@ -214,7 +214,36 @@ export default function Catalogo() {
         </div>
       </section>
 
+      {/* ---------- Cómo funciona ---------- */}
+      <section className="disciplines">
+        <div className="section-inner">
+          <div className="section-head reveal">
+            <span className="eyebrow">Cómo funciona</span>
+            <h2>Tres pasos, sin complicarte</h2>
+          </div>
+          <div className="grid cols-3 reveal reveal-1">
+            <div className="card">
+              <h4>1. Reserva</h4>
+              <p>Elige tu clase en el calendario y deja tu nombre y WhatsApp — sin crear cuenta.</p>
+            </div>
+            <div className="card">
+              <h4>2. Recibe tu QR</h4>
+              <p>Es tuyo para siempre. Guárdalo, compártelo a tu WhatsApp o descárgalo.</p>
+            </div>
+            <div className="card">
+              <h4>3. Check-in</h4>
+              <p>Muéstralo en recepción al llegar — así de simple, cada vez que vengas.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <footer className="site">
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, justifyContent: 'center', marginBottom: 10 }}>
+          <a href="#disciplinas">Disciplinas</a>
+          <a href="#calendario">Calendario</a>
+          <a href="/mi-cuenta/login">Mi cuenta</a>
+        </div>
         Oxygen Wellness Center · Reserva sin cuenta, tu QR es tuyo para siempre.
       </footer>
 

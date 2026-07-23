@@ -51,16 +51,16 @@ export default function AgendaHoy() {
           </div>
 
           {c.roster.length > 0 && (
-            <table style={{ marginTop: 12 }}>
+            <table className="responsive" style={{ marginTop: 12 }}>
               <thead><tr><th>Cliente</th><th>WhatsApp</th><th>Estado</th></tr></thead>
               <tbody>
                 {c.roster.map((r) => {
                   const estado = ESTADO_LABEL[r.estado] || { text: r.estado, className: 'accent' };
                   return (
                     <tr key={r.reservaId}>
-                      <td>{r.nombre}</td>
-                      <td>{r.whatsapp}</td>
-                      <td>
+                      <td data-label="Cliente">{r.nombre}</td>
+                      <td data-label="WhatsApp">{r.whatsapp}</td>
+                      <td data-label="Estado">
                         <span className={`pill ${estado.className}`}>
                           {estado.text}{r.estado === 'lista_espera' ? ` Nº${r.posicionEspera}` : ''}
                         </span>

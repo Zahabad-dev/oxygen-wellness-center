@@ -145,21 +145,21 @@ export default function Clases() {
         </div>
       </form>
 
-      <table>
+      <table className="responsive">
         <thead>
-          <tr><th>Fecha</th><th>Hora</th><th>Disciplina</th><th>Coach</th><th>Salón</th><th>Cupo</th><th>Estado</th><th></th></tr>
+          <tr><th>Fecha</th><th>Hora</th><th>Disciplina</th><th>Coach</th><th>Salón</th><th>Cupo</th><th>Estado</th><th>Acciones</th></tr>
         </thead>
         <tbody>
           {clases.map((c) => (
             <tr key={c.id}>
-              <td>{c.fecha}</td>
-              <td>{c.hora_inicio?.slice(0, 5)}</td>
-              <td><span className="disc-dot" style={{ background: c.disciplina_color, marginRight: 6 }} />{c.disciplina_nombre}</td>
-              <td>{c.coach_nombre}</td>
-              <td>{c.salon_nombre}</td>
-              <td>{c.capacidad_maxima}</td>
-              <td><span className={`pill ${ESTADO_LABEL[c.estado] || 'accent'}`}>{c.estado}</span></td>
-              <td style={{ display: 'flex', gap: 6 }}>
+              <td data-label="Fecha">{c.fecha}</td>
+              <td data-label="Hora">{c.hora_inicio?.slice(0, 5)}</td>
+              <td data-label="Disciplina"><span className="disc-dot" style={{ background: c.disciplina_color, marginRight: 6 }} />{c.disciplina_nombre}</td>
+              <td data-label="Coach">{c.coach_nombre}</td>
+              <td data-label="Salón">{c.salon_nombre}</td>
+              <td data-label="Cupo">{c.capacidad_maxima}</td>
+              <td data-label="Estado"><span className={`pill ${ESTADO_LABEL[c.estado] || 'accent'}`}>{c.estado}</span></td>
+              <td data-label="Acciones" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                 <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => editar(c)}>Editar</button>
                 {c.estado === 'programada' && (
                   <button className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => cancelar(c)}>Cancelar</button>

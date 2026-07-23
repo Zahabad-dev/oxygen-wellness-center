@@ -105,17 +105,17 @@ export default function Usuarios() {
         </div>
       </form>
 
-      <table>
-        <thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Coach ligado</th><th>Estado</th><th></th></tr></thead>
+      <table className="responsive">
+        <thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Coach ligado</th><th>Estado</th><th>Acciones</th></tr></thead>
         <tbody>
           {usuarios.map((u) => (
             <tr key={u.id} style={{ opacity: u.activo ? 1 : 0.5 }}>
-              <td>{u.nombre}</td>
-              <td>{u.email}</td>
-              <td><span className="pill accent">{ROL_LABEL[u.rol] || u.rol}</span></td>
-              <td>{u.coach_nombre || '—'}</td>
-              <td>{u.activo ? <span className="pill success">activo</span> : <span className="pill critical">inactivo</span>}</td>
-              <td style={{ display: 'flex', gap: 6 }}>
+              <td data-label="Nombre">{u.nombre}</td>
+              <td data-label="Correo">{u.email}</td>
+              <td data-label="Rol"><span className="pill accent">{ROL_LABEL[u.rol] || u.rol}</span></td>
+              <td data-label="Coach ligado">{u.coach_nombre || '—'}</td>
+              <td data-label="Estado">{u.activo ? <span className="pill success">activo</span> : <span className="pill critical">inactivo</span>}</td>
+              <td data-label="Acciones" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                 <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => editar(u)}>Editar</button>
                 {u.activo && (
                   <button className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => desactivar(u)}>Desactivar</button>
