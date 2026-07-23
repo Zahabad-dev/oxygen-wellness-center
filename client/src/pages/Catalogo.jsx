@@ -239,7 +239,8 @@ export default function Catalogo() {
       </section>
 
       <footer className="site">
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, justifyContent: 'center', marginBottom: 10 }}>
+        <img className="footer-logo" src="/images/logo-oxigen.png" alt="Oxigen Wellness Center" loading="lazy" />
+        <div className="footer-links">
           <a href="#disciplinas">Disciplinas</a>
           <a href="#calendario">Calendario</a>
           <a href="/mi-cuenta/login">Mi cuenta</a>

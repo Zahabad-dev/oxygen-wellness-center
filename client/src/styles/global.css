@@ -330,9 +330,13 @@ thead th { font-family: var(--font-mono); font-size: 10.5px; text-transform: upp
 @media (max-width: 760px) { .community .section-inner { grid-template-columns: 1fr; } }
 
 footer.site {
-  padding: 28px clamp(18px, 5vw, 56px); text-align: center; font-size: 12.5px; color: var(--ink-faint);
-  background: var(--bg-deep); border-top: 1px solid var(--line);
+  padding: 40px clamp(18px, 5vw, 56px) 28px; text-align: center; font-size: 12.5px; color: #cabfae;
+  background: var(--ink);
 }
+footer.site .footer-logo { width: 180px; height: auto; margin-bottom: 18px; opacity: 0.95; }
+footer.site .footer-links { display: flex; flex-wrap: wrap; gap: 18px; justify-content: center; margin-bottom: 14px; }
+footer.site .footer-links a { color: #e7dcc8; }
+footer.site .footer-links a:hover { color: #fff; }
 
 /* Modal de reserva */
 .modal-backdrop {
