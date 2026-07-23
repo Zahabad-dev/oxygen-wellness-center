@@ -7,6 +7,9 @@ html { scroll-behavior: smooth; }
 
 html, body, #root { height: 100%; }
 
+/* Cerrojo anti-desborde: pase lo que pase adentro, la pagina nunca scrollea de lado */
+html, body { max-width: 100%; overflow-x: hidden; }
+
 body {
   margin: 0;
   background: var(--bg);
@@ -16,6 +19,8 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
+
+img, svg, video { max-width: 100%; height: auto; }
 
 h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0 0 6px; text-wrap: balance; }
 p { margin: 0 0 1em; }
