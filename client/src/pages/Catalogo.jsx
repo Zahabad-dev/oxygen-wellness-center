@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { apiGet } from '../lib/apiClient.js';
 import { disciplineTheme } from '../lib/disciplineTheme.js';
 import { getWeekDays } from '../lib/dates.js';
@@ -14,6 +14,8 @@ export default function Catalogo() {
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(true);
   const [modalClaseId, setModalClaseId] = useState(null);
+  const heroBgRef = useRef(null);
+  const landingRef = useRef(null);
 
   useEffect(() => {
     apiGet('/disciplinas').then(setDisciplinas).catch(() => {});
@@ -34,10 +36,52 @@ export default function Catalogo() {
     document.getElementById('calendario')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  // Parallax sutil del hero + aparición de secciones al hacer scroll.
+  useEffect(() => {
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    let ticking = false;
+    function onScroll() {
+      if (reduceMotion || !heroBgRef.current || ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const y = Math.min(window.scrollY, 700);
+        heroBgRef.current.style.transform = `translateY(${y * 0.18}px)`;
+        ticking = false;
+      });
+    }
+    if (!reduceMotion) window.addEventListener('scroll', onScroll, { passive: true });
+
+    const els = landingRef.current?.querySelectorAll('.reveal') || [];
+    if (reduceMotion) {
+      els.forEach((el) => el.classList.add('is-visible'));
+      return () => window.removeEventListener('scroll', onScroll);
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.15 }
+    );
+    els.forEach((el) => observer.observe(el));
+
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      observer.disconnect();
+    };
+  }, []);
+
   return (
-    <div className="landing">
+    <div className="landing" ref={landingRef}>
       {/* ---------- Hero ---------- */}
-      <section className="hero" style={{ backgroundImage: "url('/images/hero.jpg')" }}>
+      <section className="hero">
+        <div className="hero-bg" ref={heroBgRef} style={{ backgroundImage: "url('/images/hero.jpg')" }} />
+        <div className="hero-overlay" />
         <div className="hero-inner">
           <span className="hero-eyebrow">Oxygen Wellness Center</span>
           <h1 className="hero-title">Tu espacio para moverte,<br />respirar y <em>pertenecer</em>.</h1>
@@ -54,13 +98,14 @@ export default function Catalogo() {
 
       {/* ---------- Disciplinas ---------- */}
       <section id="disciplinas" className="disciplines">
+        <span className="blob" aria-hidden="true" />
         <div className="section-inner">
-          <div className="section-head">
+          <div className="section-head reveal">
             <span className="eyebrow">Disciplinas</span>
             <h2>Encuentra tu ritmo</h2>
             <p>Cada disciplina tiene su propio color en el calendario — elige una para filtrar, o reserva directo.</p>
           </div>
-          <div className="discipline-strip">
+          <div className="discipline-strip reveal reveal-1">
             {disciplinas.map((d) => {
               const theme = disciplineTheme(d.nombre);
               return (
@@ -83,8 +128,9 @@ export default function Catalogo() {
 
       {/* ---------- Calendario ---------- */}
       <section id="calendario" className="calendar-section">
+        <span className="blob" aria-hidden="true" />
         <div className="section-inner">
-          <div className="section-head">
+          <div className="section-head reveal">
             <span className="eyebrow">Calendario</span>
             <h2>Reserva tu clase</h2>
             <p>Elige el día y, si quieres, filtra por disciplina.</p>
@@ -153,9 +199,10 @@ export default function Catalogo() {
 
       {/* ---------- Comunidad ---------- */}
       <section className="community">
+        <span className="blob" aria-hidden="true" />
         <div className="section-inner">
-          <img src="/images/comunidad.jpg" alt="Comunidad de Oxygen Wellness Center practicando juntas" />
-          <div>
+          <img className="reveal" src="/images/comunidad.jpg" alt="Comunidad de Oxygen Wellness Center practicando juntas" />
+          <div className="reveal reveal-1">
             <span className="eyebrow">Comunidad</span>
             <h2>No entrenas sola.</h2>
             <blockquote>“Un espacio para cuidarte, a tu ritmo, acompañada.”</blockquote>

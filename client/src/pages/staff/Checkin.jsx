@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { apiGet, apiPost } from '../../lib/apiClient.js';
 
 const READER_ID = 'qr-reader';
+const COOLDOWN_MS = 2600;
 
 export default function Checkin() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -10,36 +11,68 @@ export default function Checkin() {
 
   const [clasesHoy, setClasesHoy] = useState([]);
   const [manualToken, setManualToken] = useState('');
-  const [mensaje, setMensaje] = useState(null); // { tipo: 'success'|'error'|'warning', texto }
-  const [pendienteForzar, setPendienteForzar] = useState(null); // qrToken en espera de confirmación
+  const [manualAbierto, setManualAbierto] = useState(false);
+  const [resultado, setResultado] = useState(null); // { tipo, texto, qrToken? }
+  const [procesando, setProcesando] = useState(false);
   const [camaraActiva, setCamaraActiva] = useState(false);
   const scannerRef = useRef(null);
+  const bloqueadoRef = useRef(false); // evita reenviar el mismo QR mientras sigue en cuadro
+  const resumeTimerRef = useRef(null);
+  const scannerStatePausedRef = useRef(3); // Html5QrcodeScannerState.PAUSED (se confirma al cargar la librería)
 
   useEffect(() => {
     apiGet('/staff/agenda-hoy').then(setClasesHoy).catch(() => {});
   }, []);
 
+  const vibrar = (patron) => {
+    if (navigator.vibrate) navigator.vibrate(patron);
+  };
+
+  const reanudarEscaneo = useCallback(() => {
+    setResultado(null);
+    bloqueadoRef.current = false;
+    try {
+      if (scannerRef.current?.isScanning && scannerRef.current.getState() === scannerStatePausedRef.current) {
+        scannerRef.current.resume();
+      }
+    } catch { /* el scanner no llegó a iniciar (sin cámara) */ }
+  }, []);
+
   const registrarCheckin = useCallback(
     async (qrToken, forzar = false) => {
+      if (bloqueadoRef.current) return;
+      bloqueadoRef.current = true;
+
+      if (scannerRef.current?.isScanning) {
+        try { scannerRef.current.pause(true); } catch { /* ignore */ }
+      }
+
       if (!claseId) {
-        setMensaje({ tipo: 'error', texto: 'Elige primero la clase para hacer check-in.' });
+        setResultado({ tipo: 'error', texto: 'Elige primero la clase para hacer check-in.' });
+        bloqueadoRef.current = false;
         return;
       }
+
+      setProcesando(true);
       try {
         const data = await apiPost('/staff/checkin', { qrToken, claseId: Number(claseId), forzar });
-        setMensaje({ tipo: 'success', texto: `Check-in registrado: ${data.nombre}` });
-        setPendienteForzar(null);
+        vibrar(60);
+        setResultado({ tipo: 'success', texto: data.nombre });
         setManualToken('');
+        resumeTimerRef.current = setTimeout(reanudarEscaneo, COOLDOWN_MS);
       } catch (err) {
+        vibrar([40, 60, 40]);
         if (err.advertencia === 'fuera_de_ventana' && !forzar) {
-          setPendienteForzar(qrToken);
-          setMensaje({ tipo: 'warning', texto: err.message });
+          setResultado({ tipo: 'warning', texto: err.message, qrToken });
         } else {
-          setMensaje({ tipo: 'error', texto: err.message });
+          setResultado({ tipo: 'error', texto: err.message });
+          resumeTimerRef.current = setTimeout(reanudarEscaneo, COOLDOWN_MS);
         }
+      } finally {
+        setProcesando(false);
       }
     },
-    [claseId]
+    [claseId, reanudarEscaneo]
   );
 
   // Escáner de cámara — degrada con gracia si no hay cámara o el usuario no da permiso.
@@ -48,14 +81,15 @@ export default function Checkin() {
     let instancia = null;
 
     import('html5-qrcode')
-      .then(({ Html5Qrcode }) => {
+      .then(({ Html5Qrcode, Html5QrcodeScannerState }) => {
         if (!activo) return;
+        scannerStatePausedRef.current = Html5QrcodeScannerState.PAUSED;
         instancia = new Html5Qrcode(READER_ID);
         scannerRef.current = instancia;
         return instancia
           .start(
             { facingMode: 'environment' },
-            { fps: 10, qrbox: 220 },
+            { fps: 10, qrbox: 230 },
             (texto) => registrarCheckin(texto.trim()),
             () => {}
           )
@@ -66,6 +100,7 @@ export default function Checkin() {
 
     return () => {
       activo = false;
+      clearTimeout(resumeTimerRef.current);
       if (scannerRef.current?.isScanning) {
         scannerRef.current.stop().catch(() => {});
       }
@@ -88,7 +123,7 @@ export default function Checkin() {
         <select
           id="clase"
           value={claseId || ''}
-          onChange={(e) => setSearchParams(e.target.value ? { clase: e.target.value } : {})}
+          onChange={(e) => { setSearchParams(e.target.value ? { clase: e.target.value } : {}); reanudarEscaneo(); }}
         >
           <option value="">Selecciona una clase de hoy…</option>
           {clasesHoy.map((c) => (
@@ -99,34 +134,50 @@ export default function Checkin() {
         </select>
       </div>
 
-      <div className="card" style={{ textAlign: 'center' }}>
-        <div id={READER_ID} style={{ width: '100%', maxWidth: 320, margin: '0 auto', borderRadius: 10, overflow: 'hidden' }} />
-        {!camaraActiva && (
-          <p style={{ fontSize: 12.5, color: 'var(--ink-faint)', marginTop: 10 }}>
-            No se pudo activar la cámara — usa el código manual de abajo.
-          </p>
+      <div className={`scanner-frame ${resultado ? `is-${resultado.tipo}` : ''}`}>
+        <div id={READER_ID} className="scanner-video" />
+        {!resultado && camaraActiva && <div className="scanner-corners" aria-hidden="true" />}
+
+        {!camaraActiva && !resultado && (
+          <div className="scanner-fallback">Activando cámara… si no aparece, usa el código manual abajo.</div>
+        )}
+
+        {resultado && (
+          <div className="scanner-result">
+            <span className="scanner-result-icon" aria-hidden="true">
+              {resultado.tipo === 'success' ? '✓' : resultado.tipo === 'warning' ? '!' : '✕'}
+            </span>
+            <p className="scanner-result-text">{resultado.texto}</p>
+            {resultado.tipo === 'warning' && resultado.qrToken ? (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn btn-secondary" onClick={() => registrarCheckin(resultado.qrToken, true)}>
+                  Registrar de todas formas
+                </button>
+                <button className="btn btn-ghost" onClick={reanudarEscaneo}>Cancelar</button>
+              </div>
+            ) : (
+              <button className="btn btn-secondary" onClick={reanudarEscaneo}>Escanear siguiente</button>
+            )}
+          </div>
         )}
       </div>
 
-      <form onSubmit={onManualSubmit} className="card" style={{ marginTop: 14 }}>
-        <div className="field">
-          <label htmlFor="token">Código QR (manual)</label>
-          <input id="token" value={manualToken} onChange={(e) => setManualToken(e.target.value)} placeholder="Pega o escribe el código" />
-        </div>
-        <button className="btn btn-primary btn-block" type="submit">Registrar asistencia</button>
-      </form>
+      <button
+        className="btn btn-ghost btn-block"
+        style={{ marginTop: 10, fontSize: 13 }}
+        onClick={() => setManualAbierto((v) => !v)}
+      >
+        {manualAbierto ? 'Ocultar código manual' : '¿Problemas con la cámara? Ingresa el código manualmente'}
+      </button>
 
-      {mensaje && (
-        <div className={`alert ${mensaje.tipo}`} style={{ marginTop: 14 }}>
-          {mensaje.texto}
-          {mensaje.tipo === 'warning' && pendienteForzar && (
-            <div style={{ marginTop: 8 }}>
-              <button className="btn btn-secondary" onClick={() => registrarCheckin(pendienteForzar, true)}>
-                Registrar de todas formas
-              </button>
-            </div>
-          )}
-        </div>
+      {manualAbierto && (
+        <form onSubmit={onManualSubmit} className="card" style={{ marginTop: 10 }}>
+          <div className="field">
+            <label htmlFor="token">Código QR (manual)</label>
+            <input id="token" value={manualToken} onChange={(e) => setManualToken(e.target.value)} placeholder="Pega o escribe el código" />
+          </div>
+          <button className="btn btn-primary btn-block" type="submit" disabled={procesando}>Registrar asistencia</button>
+        </form>
       )}
     </div>
   );

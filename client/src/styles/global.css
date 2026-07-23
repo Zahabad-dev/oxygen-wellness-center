@@ -196,19 +196,20 @@ thead th { font-family: var(--font-mono); font-size: 10.5px; text-transform: upp
   display: flex;
   align-items: flex-end;
   color: #fdf8f0;
-  background-size: cover;
-  background-position: center 28%;
   isolation: isolate;
+  overflow: hidden;
   padding: clamp(28px, 6vw, 56px) !important;
 }
-.hero::before {
-  content: '';
-  position: absolute; inset: 0;
-  background:
-    linear-gradient(0deg, rgba(30, 20, 12, 0.82) 0%, rgba(30, 20, 12, 0.32) 55%, rgba(30, 20, 12, 0.12) 100%);
-  z-index: 0;
+.hero-bg {
+  position: absolute; inset: -10% 0; z-index: 0;
+  background-size: cover; background-position: center 28%;
+  will-change: transform;
 }
-.hero-inner { position: relative; z-index: 1; max-width: 640px; }
+.hero-overlay {
+  position: absolute; inset: 0; z-index: 1;
+  background: linear-gradient(0deg, rgba(30, 20, 12, 0.82) 0%, rgba(30, 20, 12, 0.32) 55%, rgba(30, 20, 12, 0.12) 100%);
+}
+.hero-inner { position: relative; z-index: 2; max-width: 640px; }
 .hero-eyebrow {
   font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.14em; text-transform: uppercase;
   color: #f1e6d8; opacity: 0.9;
@@ -224,25 +225,32 @@ thead th { font-family: var(--font-mono); font-size: 10.5px; text-transform: upp
 .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
 .hero .btn-secondary { background: rgba(255,255,255,0.08); color: #fffaf2; border-color: rgba(255,250,242,0.55); backdrop-filter: blur(2px); }
 
-/* Disciplinas */
-.disciplines { background: var(--surface); }
+/* Disciplinas — medallón circular, como los aros de historias destacadas de su Instagram */
+.disciplines { background: var(--surface); position: relative; overflow: hidden; }
 .discipline-strip {
-  display: flex; gap: 16px; overflow-x: auto; padding-bottom: 6px; scroll-snap-type: x proximity;
+  display: flex; gap: 22px; overflow-x: auto; padding: 6px 4px 14px; scroll-snap-type: x proximity;
+  position: relative; z-index: 1;
 }
 .discipline-strip::-webkit-scrollbar { height: 6px; }
 .discipline-strip::-webkit-scrollbar-thumb { background: var(--line); border-radius: 8px; }
 .discipline-card {
-  flex: 0 0 auto; width: 220px; scroll-snap-align: start;
-  border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--surface);
-  cursor: pointer; text-align: left; padding: 0; box-shadow: var(--shadow); transition: transform 0.18s ease, box-shadow 0.18s ease;
+  flex: 0 0 auto; width: 116px; scroll-snap-align: start;
+  border: none; background: transparent; cursor: pointer; text-align: center; padding: 4px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
 }
-.discipline-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); }
-.discipline-card.active { outline: 2px solid var(--accent); outline-offset: -2px; }
-.discipline-card .thumb { height: 140px; background-size: cover; background-position: center; }
-.discipline-card .label { padding: 12px 14px; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; }
+.discipline-card .thumb {
+  width: 96px; height: 96px; border-radius: 50%; background-size: cover; background-position: center;
+  box-shadow: var(--shadow); border: 3px solid var(--surface);
+  outline: 2px solid var(--line); outline-offset: 3px;
+  transition: transform 0.18s ease, outline-color 0.18s ease;
+}
+.discipline-card:hover .thumb { transform: translateY(-3px) scale(1.03); }
+.discipline-card.active .thumb { outline-color: var(--accent); }
+.discipline-card .label { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13px; line-height: 1.2; }
 
 /* Calendario */
-.calendar-section { background: var(--bg-deep); }
+.calendar-section { background: var(--bg-deep); position: relative; overflow: hidden; }
+.calendar-section .section-inner { position: relative; z-index: 1; }
 .day-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 18px; }
 .day-tab {
   flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 2px;
@@ -269,8 +277,8 @@ thead th { font-family: var(--font-mono); font-size: 10.5px; text-transform: upp
 .empty-state { padding: 40px 20px; text-align: center; color: var(--ink-faint); background: var(--surface); border-radius: var(--radius); border: 1px dashed var(--line); }
 
 /* Comunidad */
-.community { background: var(--surface); }
-.community .section-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+.community { background: var(--surface); position: relative; overflow: hidden; }
+.community .section-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; position: relative; z-index: 1; }
 .community img { width: 100%; border-radius: var(--radius); box-shadow: var(--shadow); aspect-ratio: 4/3; object-fit: cover; }
 .community blockquote { font-family: var(--font-display); font-style: italic; font-size: 20px; color: var(--ink); margin: 0 0 16px; }
 @media (max-width: 760px) { .community .section-inner { grid-template-columns: 1fr; } }
@@ -298,3 +306,77 @@ footer.site {
   display: flex; align-items: center; justify-content: center; font-size: 16px; line-height: 1;
 }
 .modal-close:hover { background: var(--surface-2); }
+
+/* ================= Detalles decorativos sutiles ================= */
+
+.blob {
+  position: absolute; border-radius: 50%; z-index: 0; pointer-events: none;
+  filter: blur(3px);
+  opacity: 0.5;
+}
+.disciplines .blob { width: 340px; height: 340px; right: -140px; top: -120px; background: var(--accent-soft); }
+.calendar-section .blob { width: 280px; height: 280px; left: -120px; bottom: -100px; background: var(--gold-soft); opacity: 0.6; }
+.community .blob { width: 260px; height: 260px; right: -100px; top: 40%; background: var(--accent-soft); opacity: 0.45; }
+
+.ring-deco {
+  position: absolute; border-radius: 50%; border: 1.5px solid var(--line); z-index: 0; pointer-events: none;
+}
+.hero-inner .ring-deco { display: none; }
+
+/* Aparición suave al hacer scroll */
+.reveal { opacity: 0; transform: translateY(22px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.reveal.is-visible { opacity: 1; transform: none; }
+.reveal-1 { transition-delay: 0.05s; }
+.reveal-2 { transition-delay: 0.14s; }
+.reveal-3 { transition-delay: 0.22s; }
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .reveal-1, .reveal-2, .reveal-3 { transition: none; opacity: 1; transform: none; }
+}
+
+/* ================= Escáner de check-in ================= */
+
+.scanner-frame {
+  position: relative; aspect-ratio: 1 / 1; max-width: 340px; margin: 0 auto;
+  border-radius: var(--radius); overflow: hidden; background: #14100c;
+  box-shadow: var(--shadow); transition: box-shadow 0.25s ease;
+}
+.scanner-frame.is-success { box-shadow: 0 0 0 4px var(--success); }
+.scanner-frame.is-warning { box-shadow: 0 0 0 4px var(--warning); }
+.scanner-frame.is-error { box-shadow: 0 0 0 4px var(--critical); }
+.scanner-video { width: 100%; height: 100%; }
+.scanner-video video, .scanner-video canvas { width: 100% !important; height: 100% !important; object-fit: cover; }
+
+.scanner-corners {
+  position: absolute; inset: 12%; border: 2px solid rgba(255, 250, 242, 0.8); border-radius: 20px;
+  pointer-events: none; overflow: hidden;
+}
+.scanner-corners::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 2px; top: 0;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  animation: scanline 2.4s ease-in-out infinite;
+}
+@keyframes scanline {
+  0%, 100% { top: 4%; opacity: 0.9; }
+  50% { top: 92%; opacity: 0.5; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scanner-corners::after { animation: none; top: 50%; }
+}
+
+.scanner-fallback {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  padding: 24px; text-align: center; color: #f1e6d8; font-size: 13px; background: rgba(20, 16, 12, 0.55);
+}
+
+.scanner-result {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; padding: 22px; text-align: center; background: var(--surface);
+}
+.scanner-result-icon {
+  width: 58px; height: 58px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 28px; font-weight: 700; color: #fff;
+}
+.is-success .scanner-result-icon { background: var(--success); }
+.is-warning .scanner-result-icon { background: var(--warning); }
+.is-error .scanner-result-icon { background: var(--critical); }
+.scanner-result-text { font-family: var(--font-display); font-size: 18px; margin: 0; }
