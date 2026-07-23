@@ -14,6 +14,8 @@ const AdminCoaches = lazy(() => import('./pages/admin/Coaches.jsx'));
 const AdminClases = lazy(() => import('./pages/admin/Clases.jsx'));
 const AdminUsuarios = lazy(() => import('./pages/admin/Usuarios.jsx'));
 const StaffClientes = lazy(() => import('./pages/staff/Clientes.jsx'));
+const ClientLogin = lazy(() => import('./pages/ClientLogin.jsx'));
+const ClientPortal = lazy(() => import('./pages/ClientPortal.jsx'));
 
 function Topbar() {
   const { isAuthenticated, user, signOut } = useAuth();
@@ -33,7 +35,10 @@ function Topbar() {
             <a href="#" onClick={(e) => { e.preventDefault(); signOut(); }}>Salir</a>
           </>
         ) : (
-          <NavLink to="/staff/login">Acceso staff</NavLink>
+          <>
+            <NavLink to="/mi-cuenta/login">Mi cuenta</NavLink>
+            <NavLink to="/staff/login">Acceso staff</NavLink>
+          </>
         )}
       </nav>
     </header>
@@ -53,6 +58,8 @@ export default function App() {
                 <Route path="/clase/:id" element={<DetalleClase />} />
                 <Route path="/reserva-confirmada/:qrToken" element={<ReservaConfirmada />} />
                 <Route path="/mi-qr/:qrToken" element={<MiQr />} />
+                <Route path="/mi-cuenta/login" element={<ClientLogin />} />
+                <Route path="/mi-cuenta" element={<ClientPortal />} />
 
                 <Route path="/staff/login" element={<StaffLogin />} />
                 <Route

@@ -14,6 +14,7 @@ import { reservasRouter } from './routes/reservas.js';
 import { clientesRouter } from './routes/clientes.js';
 import { staffRouter } from './routes/staff.js';
 import { adminRouter } from './routes/admin.js';
+import { portalRouter } from './portalAuth.js';
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.get('/api/health', (_req, res) => {
 app.use('/api', catalogoRouter);
 app.use('/api/reservas', reservasRouter);
 app.use('/api/clientes', clientesRouter);
+app.use('/api/portal', portalRouter);
 
 // ---------- Staff (login abierto, resto protegido) ----------
 app.use('/api/staff', authRouter);

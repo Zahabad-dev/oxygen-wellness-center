@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import bcrypt from 'bcryptjs';
 import { query, withTransaction } from '../db.js';
 import { asyncHandler } from '../asyncHandler.js';
 
@@ -54,6 +55,7 @@ staffRouter.get('/clientes', asyncHandler(async (req, res) => {
 
   const { rows } = await query(
     `SELECT cl.id, cl.nombre, cl.whatsapp, cl.email, cl.qr_token, cl.created_at,
+            (cl.password_hash IS NOT NULL) AS tiene_acceso,
             COALESCE(r.n, 0)::int AS reservas_total,
             r.ultima_fecha
      FROM clientes cl
@@ -67,6 +69,25 @@ staffRouter.get('/clientes', asyncHandler(async (req, res) => {
     params
   );
   res.json(rows);
+}));
+
+// ---------- Crear acceso al portal para un cliente (nombre/whatsapp ya conocidos) ----------
+staffRouter.post('/clientes/:id/crear-acceso', asyncHandler(async (req, res) => {
+  if (!['administrador', 'recepcion'].includes(req.staff.rol)) {
+    return res.status(403).json({ error: 'No tienes permiso para esta acción.' });
+  }
+  const { password } = req.body || {};
+  if (!password || password.length < 4) {
+    return res.status(400).json({ error: 'La contraseña debe tener al menos 4 caracteres.' });
+  }
+
+  const hash = await bcrypt.hash(password, 10);
+  const { rows } = await query(
+    `UPDATE clientes SET password_hash = $1 WHERE id = $2 RETURNING nombre, whatsapp`,
+    [hash, req.params.id]
+  );
+  if (!rows[0]) return res.status(404).json({ error: 'Cliente no encontrado.' });
+  res.json({ ok: true, nombre: rows[0].nombre, whatsapp: rows[0].whatsapp });
 }));
 
 // ---------- Check-in ----------

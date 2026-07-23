@@ -9,6 +9,7 @@ const config = {
 
   jwtSecret: process.env.JWT_SECRET || 'cambia-este-secreto-en-produccion',
   cookieName: 'oxygen_staff',
+  clientCookieName: 'oxygen_client',
   cookieSecure: process.env.COOKIE_SECURE !== '0',
 
   corsOrigins: (process.env.CORS_ORIGINS || 'http://localhost:5173')
