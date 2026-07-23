@@ -1,6 +1,9 @@
 import { Router } from 'express';
+import bcrypt from 'bcryptjs';
 import { query, withTransaction } from '../db.js';
 import { asyncHandler } from '../asyncHandler.js';
+
+const ROLES_VALIDOS = ['administrador', 'recepcion', 'coach'];
 
 export const adminRouter = Router();
 
@@ -141,5 +144,78 @@ adminRouter.delete('/clases/:id', asyncHandler(async (req, res) => {
     return res.status(409).json({ error: 'Esta clase ya tiene reservas — cancélala en vez de borrarla.' });
   }
   await query(`DELETE FROM clases WHERE id = $1`, [req.params.id]);
+  res.json({ ok: true });
+}));
+
+// ---------- Usuarios de staff (solo administrador — ya lo bloquea el middleware del router) ----------
+adminRouter.get('/usuarios', asyncHandler(async (_req, res) => {
+  const { rows } = await query(
+    `SELECT u.id, u.nombre, u.email, u.activo, r.nombre AS rol, u.coach_id, co.nombre AS coach_nombre
+     FROM usuarios_internos u
+     JOIN roles r ON r.id = u.rol_id
+     LEFT JOIN coaches co ON co.id = u.coach_id
+     ORDER BY u.nombre`
+  );
+  res.json(rows);
+}));
+
+adminRouter.post('/usuarios', asyncHandler(async (req, res) => {
+  const { nombre, email, password, rol, coachId } = req.body || {};
+  if (!nombre?.trim() || !email?.trim() || !password) {
+    return res.status(400).json({ error: 'Nombre, correo y contraseña son obligatorios.' });
+  }
+  if (!ROLES_VALIDOS.includes(rol)) {
+    return res.status(400).json({ error: 'Rol inválido.' });
+  }
+  if (rol === 'coach' && !coachId) {
+    return res.status(400).json({ error: 'Selecciona a qué coach corresponde esta cuenta.' });
+  }
+
+  const { rows: rolRows } = await query(`SELECT id FROM roles WHERE nombre = $1`, [rol]);
+  const hash = await bcrypt.hash(password, 10);
+
+  try {
+    const { rows } = await query(
+      `INSERT INTO usuarios_internos (nombre, email, password_hash, rol_id, coach_id)
+       VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+      [nombre.trim(), email.trim().toLowerCase(), hash, rolRows[0].id, rol === 'coach' ? coachId : null]
+    );
+    res.status(201).json({ id: rows[0].id });
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'Ya existe un usuario con ese correo.' });
+    }
+    throw err;
+  }
+}));
+
+adminRouter.put('/usuarios/:id', asyncHandler(async (req, res) => {
+  const { nombre, rol, coachId, activo, password } = req.body || {};
+
+  let rolId = null;
+  if (rol) {
+    if (!ROLES_VALIDOS.includes(rol)) return res.status(400).json({ error: 'Rol inválido.' });
+    const { rows: rolRows } = await query(`SELECT id FROM roles WHERE nombre = $1`, [rol]);
+    rolId = rolRows[0].id;
+  }
+  const passwordHash = password ? await bcrypt.hash(password, 10) : null;
+
+  const { rows } = await query(
+    `UPDATE usuarios_internos SET
+       nombre = COALESCE($1, nombre),
+       rol_id = COALESCE($2, rol_id),
+       coach_id = CASE WHEN $3::text = 'coach' THEN $4 ELSE (CASE WHEN $3::text IS NOT NULL THEN NULL ELSE coach_id END) END,
+       activo = COALESCE($5, activo),
+       password_hash = COALESCE($6, password_hash)
+     WHERE id = $7
+     RETURNING id`,
+    [nombre?.trim() || null, rolId, rol || null, coachId || null, activo, passwordHash, req.params.id]
+  );
+  if (!rows[0]) return res.status(404).json({ error: 'Usuario no encontrado.' });
+  res.json({ ok: true });
+}));
+
+adminRouter.delete('/usuarios/:id', asyncHandler(async (req, res) => {
+  await query(`UPDATE usuarios_internos SET activo = false WHERE id = $1`, [req.params.id]);
   res.json({ ok: true });
 }));

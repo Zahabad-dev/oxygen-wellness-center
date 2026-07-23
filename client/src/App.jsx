@@ -12,6 +12,8 @@ const StaffCheckin = lazy(() => import('./pages/staff/Checkin.jsx'));
 const StaffAgendaHoy = lazy(() => import('./pages/staff/AgendaHoy.jsx'));
 const AdminCoaches = lazy(() => import('./pages/admin/Coaches.jsx'));
 const AdminClases = lazy(() => import('./pages/admin/Clases.jsx'));
+const AdminUsuarios = lazy(() => import('./pages/admin/Usuarios.jsx'));
+const StaffClientes = lazy(() => import('./pages/staff/Clientes.jsx'));
 
 function Topbar() {
   const { isAuthenticated, user, signOut } = useAuth();
@@ -25,6 +27,7 @@ function Topbar() {
           <>
             <NavLink to="/staff/agenda">Agenda</NavLink>
             <NavLink to="/staff/checkin">Check-in</NavLink>
+            {(user.rol === 'administrador' || user.rol === 'recepcion') && <NavLink to="/staff/clientes">Clientes</NavLink>}
             {user.rol === 'administrador' && <NavLink to="/admin/clases">Admin</NavLink>}
             <span className="pill accent">{user.nombre}</span>
             <a href="#" onClick={(e) => { e.preventDefault(); signOut(); }}>Salir</a>
@@ -81,6 +84,22 @@ export default function App() {
                   element={
                     <ProtectedRoute roles={['administrador']}>
                       <AdminClases />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/usuarios"
+                  element={
+                    <ProtectedRoute roles={['administrador']}>
+                      <AdminUsuarios />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/staff/clientes"
+                  element={
+                    <ProtectedRoute roles={['administrador', 'recepcion']}>
+                      <StaffClientes />
                     </ProtectedRoute>
                   }
                 />

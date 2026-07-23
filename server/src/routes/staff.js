@@ -42,16 +42,29 @@ staffRouter.get('/agenda-hoy', asyncHandler(async (req, res) => {
   res.json(rows);
 }));
 
-// ---------- Buscar cliente (recepción) ----------
+// ---------- Clientes: lista + buscador (recepción y admin) ----------
 staffRouter.get('/clientes', asyncHandler(async (req, res) => {
   const buscar = (req.query.buscar || '').trim();
-  if (!buscar) return res.json([]);
+  const params = [];
+  let filtro = '';
+  if (buscar) {
+    params.push(`%${buscar}%`);
+    filtro = `WHERE cl.nombre ILIKE $${params.length} OR cl.whatsapp ILIKE $${params.length}`;
+  }
+
   const { rows } = await query(
-    `SELECT id, nombre, whatsapp, qr_token
-     FROM clientes
-     WHERE nombre ILIKE $1 OR whatsapp ILIKE $1
-     ORDER BY nombre LIMIT 20`,
-    [`%${buscar}%`]
+    `SELECT cl.id, cl.nombre, cl.whatsapp, cl.email, cl.qr_token, cl.created_at,
+            COALESCE(r.n, 0)::int AS reservas_total,
+            r.ultima_fecha
+     FROM clientes cl
+     LEFT JOIN (
+       SELECT cliente_id, count(*) AS n, max(creado_en) AS ultima_fecha
+       FROM reservas GROUP BY cliente_id
+     ) r ON r.cliente_id = cl.id
+     ${filtro}
+     ORDER BY cl.created_at DESC
+     LIMIT 50`,
+    params
   );
   res.json(rows);
 }));
