@@ -46,8 +46,9 @@ export default function Usuarios() {
   }
 
   async function desactivar(u) {
-    if (!confirm(`¿Desactivar el acceso de ${u.nombre}? Ya no podrá iniciar sesión.`)) return;
-    await apiDelete(`/admin/usuarios/${u.id}`);
+    if (!confirm(`¿Quitar el acceso de ${u.nombre}? Ya no podrá iniciar sesión (esto puede borrar la cuenta por completo, según la configuración actual).`)) return;
+    const data = await apiDelete(`/admin/usuarios/${u.id}`);
+    alert(data.eliminado ? `${u.nombre} fue borrado por completo.` : `${u.nombre} fue desactivado.`);
     cargar();
   }
 

@@ -57,12 +57,17 @@ staffRouter.get('/clientes', asyncHandler(async (req, res) => {
     `SELECT cl.id, cl.nombre, cl.whatsapp, cl.email, cl.qr_token, cl.created_at,
             (cl.password_hash IS NOT NULL) AS tiene_acceso,
             COALESCE(r.n, 0)::int AS reservas_total,
+            COALESCE(a.n, 0)::int AS clases_tomadas,
             r.ultima_fecha
      FROM clientes cl
      LEFT JOIN (
        SELECT cliente_id, count(*) AS n, max(creado_en) AS ultima_fecha
        FROM reservas GROUP BY cliente_id
      ) r ON r.cliente_id = cl.id
+     LEFT JOIN (
+       SELECT cliente_id, count(*) AS n
+       FROM checkins GROUP BY cliente_id
+     ) a ON a.cliente_id = cl.id
      ${filtro}
      ORDER BY cl.created_at DESC
      LIMIT 50`,

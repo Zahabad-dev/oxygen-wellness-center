@@ -20,6 +20,12 @@ const config = {
   uploadDir: process.env.UPLOAD_DIR || './uploads',
   clientDist: process.env.CLIENT_DIST || '../client/dist',
   publicUrl: process.env.PUBLIC_URL || 'http://localhost:5173',
+
+  // Habilita edicion y borrado completo de clientes y usuarios de staff desde el
+  // panel de Admin (util mientras se hacen pruebas y hay que limpiar registros).
+  // No hay variable de entorno ni switch en la interfaz para esto a proposito:
+  // se prende o apaga solo cambiando este valor en el codigo y volviendo a desplegar.
+  clientDataManagementEnabled: true,
 };
 
 export default config;

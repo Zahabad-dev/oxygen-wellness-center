@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
+import config from '../config.js';
 import { query, withTransaction } from '../db.js';
 import { asyncHandler } from '../asyncHandler.js';
 
@@ -216,6 +217,58 @@ adminRouter.put('/usuarios/:id', asyncHandler(async (req, res) => {
 }));
 
 adminRouter.delete('/usuarios/:id', asyncHandler(async (req, res) => {
+  if (config.clientDataManagementEnabled) {
+    await query(`DELETE FROM usuarios_internos WHERE id = $1`, [req.params.id]);
+    return res.json({ ok: true, eliminado: true });
+  }
   await query(`UPDATE usuarios_internos SET activo = false WHERE id = $1`, [req.params.id]);
+  res.json({ ok: true, eliminado: false });
+}));
+
+// ---------- Clientes: edicion y borrado completo (gateado por config.clientDataManagementEnabled) ----------
+adminRouter.get('/clientes/:id', asyncHandler(async (req, res) => {
+  const { rows } = await query(
+    `SELECT id, nombre, whatsapp, email, notas_internas, estado, consentimiento_marketing, qr_token, created_at
+     FROM clientes WHERE id = $1`,
+    [req.params.id]
+  );
+  if (!rows[0]) return res.status(404).json({ error: 'Cliente no encontrado.' });
+  res.json(rows[0]);
+}));
+
+adminRouter.put('/clientes/:id', asyncHandler(async (req, res) => {
+  if (!config.clientDataManagementEnabled) {
+    return res.status(403).json({ error: 'La edición completa de clientes está deshabilitada.' });
+  }
+  const { nombre, whatsapp, email, notasInternas, estado, consentimientoMarketing } = req.body || {};
+
+  try {
+    const { rows } = await query(
+      `UPDATE clientes SET
+         nombre = COALESCE($1, nombre),
+         whatsapp = COALESCE($2, whatsapp),
+         email = $3,
+         notas_internas = $4,
+         estado = COALESCE($5, estado),
+         consentimiento_marketing = COALESCE($6, consentimiento_marketing)
+       WHERE id = $7
+       RETURNING id`,
+      [nombre?.trim() || null, whatsapp?.trim() || null, email || null, notasInternas || null, estado || null, consentimientoMarketing, req.params.id]
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'Cliente no encontrado.' });
+    res.json({ ok: true });
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'Ya existe otro cliente con ese WhatsApp.' });
+    }
+    throw err;
+  }
+}));
+
+adminRouter.delete('/clientes/:id', asyncHandler(async (req, res) => {
+  if (!config.clientDataManagementEnabled) {
+    return res.status(403).json({ error: 'El borrado de clientes está deshabilitado.' });
+  }
+  await query(`DELETE FROM clientes WHERE id = $1`, [req.params.id]);
   res.json({ ok: true });
 }));
