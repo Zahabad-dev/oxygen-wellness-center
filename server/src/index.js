@@ -8,11 +8,12 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 
 import config from './config.js';
-import { authRouter, requireAuth } from './auth.js';
+import { authRouter, requireAuth, requireRole } from './auth.js';
 import { catalogoRouter } from './routes/catalogo.js';
 import { reservasRouter } from './routes/reservas.js';
 import { clientesRouter } from './routes/clientes.js';
 import { staffRouter } from './routes/staff.js';
+import { adminRouter } from './routes/admin.js';
 
 const app = express();
 
@@ -35,6 +36,9 @@ app.use('/api/clientes', clientesRouter);
 // ---------- Staff (login abierto, resto protegido) ----------
 app.use('/api/staff', authRouter);
 app.use('/api/staff', requireAuth, staffRouter);
+
+// ---------- Admin (protegido, solo rol administrador) ----------
+app.use('/api/admin', requireAuth, requireRole('administrador'), adminRouter);
 
 // ---------- Cliente estático (build de Vite) ----------
 const clientDist = resolve(config.clientDist);
