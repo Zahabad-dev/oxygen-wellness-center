@@ -96,7 +96,7 @@ main { flex: 1; width: 100%; }
 .btn:hover { filter: brightness(0.96); }
 .btn:active { transform: translateY(1px); }
 .btn:disabled { opacity: 0.55; cursor: not-allowed; }
-.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary { background: var(--accent); color: var(--on-accent); }
 .btn-secondary { background: var(--surface); color: var(--ink); border-color: var(--line); }
 .btn-ghost { background: transparent; color: inherit; border-color: currentColor; }
 .btn-block { width: 100%; border-radius: 10px; }
@@ -207,7 +207,7 @@ thead th { font-family: var(--font-mono); font-size: 10.5px; text-transform: upp
 }
 .hero-overlay {
   position: absolute; inset: 0; z-index: 1;
-  background: linear-gradient(0deg, rgba(30, 20, 12, 0.82) 0%, rgba(30, 20, 12, 0.32) 55%, rgba(30, 20, 12, 0.12) 100%);
+  background: linear-gradient(0deg, rgba(8, 7, 5, 0.74) 0%, rgba(8, 7, 5, 0.26) 55%, rgba(8, 7, 5, 0.06) 100%);
 }
 .hero-inner { position: relative; z-index: 2; max-width: 640px; }
 .hero-eyebrow {
@@ -239,8 +239,8 @@ thead th { font-family: var(--font-mono); font-size: 10.5px; text-transform: upp
   display: flex; flex-direction: column; align-items: center; gap: 10px;
 }
 .discipline-card .thumb {
-  width: 96px; height: 96px; border-radius: 50%; background-size: cover; background-position: center;
-  box-shadow: var(--shadow); border: 3px solid var(--surface);
+  width: 96px; height: 96px; border-radius: 50%; object-fit: cover; display: block;
+  box-shadow: var(--shadow); border: 3px solid var(--surface); background: var(--surface-2);
   outline: 2px solid var(--line); outline-offset: 3px;
   transition: transform 0.18s ease, outline-color 0.18s ease;
 }

@@ -114,7 +114,7 @@ export default function Catalogo() {
                   className={`discipline-card ${disciplinaId === d.id ? 'active' : ''}`}
                   onClick={() => elegirDisciplina(d.id)}
                 >
-                  <div className="thumb" style={{ backgroundImage: `url('${theme.image}')` }} />
+                  <img className="thumb" src={theme.image} alt={d.nombre} loading="lazy" decoding="async" />
                   <div className="label">
                     <span className="disc-dot" style={{ background: theme.color }} />
                     {d.nombre}
@@ -201,7 +201,7 @@ export default function Catalogo() {
       <section className="community">
         <span className="blob" aria-hidden="true" />
         <div className="section-inner">
-          <img className="reveal" src="/images/comunidad.jpg" alt="Comunidad de Oxygen Wellness Center practicando juntas" />
+          <img className="reveal" src="/images/comunidad.jpg" alt="Comunidad de Oxygen Wellness Center practicando juntas" loading="lazy" decoding="async" />
           <div className="reveal reveal-1">
             <span className="eyebrow">Comunidad</span>
             <h2>No entrenas sola.</h2>
