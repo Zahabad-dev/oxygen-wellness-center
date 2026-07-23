@@ -31,7 +31,7 @@ export default function Usuarios() {
     setGuardando(true);
     try {
       if (form.id) {
-        const { id, email, ...datos } = form; // el email no se edita aquí para no complicar el login
+        const { id, ...datos } = form;
         await apiPut(`/admin/usuarios/${form.id}`, datos);
       } else {
         await apiPost('/admin/usuarios', form);
@@ -64,12 +64,10 @@ export default function Usuarios() {
           <label htmlFor="nombre">Nombre</label>
           <input id="nombre" required value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} />
         </div>
-        {!form.id && (
-          <div className="field">
-            <label htmlFor="email">Correo (con el que va a entrar)</label>
-            <input id="email" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-          </div>
-        )}
+        <div className="field">
+          <label htmlFor="email">Correo (con el que va a entrar)</label>
+          <input id="email" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+        </div>
         <div className="field">
           <label htmlFor="password">{form.id ? 'Nueva contraseña (opcional)' : 'Contraseña'}</label>
           <input id="password" type="text" required={!form.id} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder={form.id ? 'Déjalo vacío para no cambiarla' : ''} />

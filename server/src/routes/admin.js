@@ -191,7 +191,7 @@ adminRouter.post('/usuarios', asyncHandler(async (req, res) => {
 }));
 
 adminRouter.put('/usuarios/:id', asyncHandler(async (req, res) => {
-  const { nombre, rol, coachId, activo, password } = req.body || {};
+  const { nombre, email, rol, coachId, activo, password } = req.body || {};
 
   let rolId = null;
   if (rol) {
@@ -201,19 +201,27 @@ adminRouter.put('/usuarios/:id', asyncHandler(async (req, res) => {
   }
   const passwordHash = password ? await bcrypt.hash(password, 10) : null;
 
-  const { rows } = await query(
-    `UPDATE usuarios_internos SET
-       nombre = COALESCE($1, nombre),
-       rol_id = COALESCE($2, rol_id),
-       coach_id = CASE WHEN $3::text = 'coach' THEN $4 ELSE (CASE WHEN $3::text IS NOT NULL THEN NULL ELSE coach_id END) END,
-       activo = COALESCE($5, activo),
-       password_hash = COALESCE($6, password_hash)
-     WHERE id = $7
-     RETURNING id`,
-    [nombre?.trim() || null, rolId, rol || null, coachId || null, activo, passwordHash, req.params.id]
-  );
-  if (!rows[0]) return res.status(404).json({ error: 'Usuario no encontrado.' });
-  res.json({ ok: true });
+  try {
+    const { rows } = await query(
+      `UPDATE usuarios_internos SET
+         nombre = COALESCE($1, nombre),
+         email = COALESCE($2, email),
+         rol_id = COALESCE($3, rol_id),
+         coach_id = CASE WHEN $4::text = 'coach' THEN $5 ELSE (CASE WHEN $4::text IS NOT NULL THEN NULL ELSE coach_id END) END,
+         activo = COALESCE($6, activo),
+         password_hash = COALESCE($7, password_hash)
+       WHERE id = $8
+       RETURNING id`,
+      [nombre?.trim() || null, email?.trim().toLowerCase() || null, rolId, rol || null, coachId || null, activo, passwordHash, req.params.id]
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'Usuario no encontrado.' });
+    res.json({ ok: true });
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'Ya existe otro usuario con ese correo.' });
+    }
+    throw err;
+  }
 }));
 
 adminRouter.delete('/usuarios/:id', asyncHandler(async (req, res) => {
