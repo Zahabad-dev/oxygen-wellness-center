@@ -103,7 +103,7 @@ export default function BookingModal({ claseId, onClose }) {
             ) : (
               <div className="alert success">¡Reserva confirmada! Este es tu QR para siempre.</div>
             )}
-            <ClienteQrCard qrToken={resultado.qrToken} heading="Tu identificación en Oxygen" />
+            <ClienteQrCard qrToken={resultado.qrToken} heading="Tu identificación en Oxigen" />
           </div>
         )}
       </div>

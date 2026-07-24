@@ -4,12 +4,12 @@ const config = {
   isProd: process.env.NODE_ENV === 'production',
 
   // Postgres (Easypanel). En Easypanel usar el host INTERNO del servicio:
-  // postgres://oxygen_app:PASS@<servicio-pg>:5432/oxygen
+  // postgres://oxigen_app:PASS@<servicio-pg>:5432/oxigen
   databaseUrl: process.env.DATABASE_URL || '',
 
   jwtSecret: process.env.JWT_SECRET || 'cambia-este-secreto-en-produccion',
-  cookieName: 'oxygen_staff',
-  clientCookieName: 'oxygen_client',
+  cookieName: 'oxigen_staff',
+  clientCookieName: 'oxigen_client',
   cookieSecure: process.env.COOKIE_SECURE !== '0',
 
   corsOrigins: (process.env.CORS_ORIGINS || 'http://localhost:5173')

@@ -1,4 +1,4 @@
--- Oxygen Wellness Center — datos semilla para poder probar el flujo completo
+-- Oxigen Wellness Center — datos semilla para poder probar el flujo completo
 -- Ejecutar después de 01_schema.sql y 02_usuarios.sql.
 
 -- Roles y permisos base
@@ -47,11 +47,11 @@ ON CONFLICT (nombre) DO NOTHING;
 
 -- Sucursal y salón placeholder (listos para una segunda sucursal en el futuro sin rediseño)
 INSERT INTO sucursales (nombre, direccion)
-VALUES ('Oxygen Wellness Center — Principal', 'Por confirmar con la clienta')
+VALUES ('Oxigen Wellness Center — Principal', 'Por confirmar con la clienta')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO salones (sucursal_id, nombre, capacidad_maxima)
-SELECT id, 'Salón A', 12 FROM sucursales WHERE nombre = 'Oxygen Wellness Center — Principal'
+SELECT id, 'Salón A', 12 FROM sucursales WHERE nombre = 'Oxigen Wellness Center — Principal'
 ON CONFLICT DO NOTHING;
 
 -- Coach demo
@@ -78,6 +78,6 @@ ON CONFLICT (clave) DO NOTHING;
 -- Usuario admin de desarrollo. Password: "OxygenAdmin2026" — CAMBIAR antes de producción
 -- (genera un hash nuevo con "npm run hash -- \"TuPassword\"" desde server/ y actualiza esta fila).
 INSERT INTO usuarios_internos (nombre, email, password_hash, rol_id)
-SELECT 'Administradora', 'admin@oxygenwc.com', '$2b$10$sL82nyLcrpiXmDHdeiA6/ekdgu4jo4FvE2jX4qq5k8cEutUg/DU2O',
+SELECT 'Administradora', 'admin@oxigenwc.com', '$2b$10$sL82nyLcrpiXmDHdeiA6/ekdgu4jo4FvE2jX4qq5k8cEutUg/DU2O',
        (SELECT id FROM roles WHERE nombre = 'administrador')
 ON CONFLICT (email) DO NOTHING;

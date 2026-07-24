@@ -19,12 +19,12 @@ export default function ClienteQrCard({ qrToken, heading }) {
     try {
       const res = await fetch(qrUrl);
       const blob = await res.blob();
-      const file = new File([blob], 'oxygen-wellness-qr.png', { type: 'image/png' });
+      const file = new File([blob], 'oxigen-wellness-qr.png', { type: 'image/png' });
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: 'Mi QR — Oxygen Wellness Center',
-          text: 'Este es mi código de identificación en Oxygen Wellness Center.',
+          title: 'Mi QR — Oxigen Wellness Center',
+          text: 'Este es mi código de identificación en Oxigen Wellness Center.',
         });
         return;
       }
@@ -37,7 +37,7 @@ export default function ClienteQrCard({ qrToken, heading }) {
   const descargar = useCallback(() => {
     const a = document.createElement('a');
     a.href = qrUrl;
-    a.download = 'oxygen-wellness-qr.png';
+    a.download = 'oxigen-wellness-qr.png';
     a.click();
   }, [qrUrl]);
 

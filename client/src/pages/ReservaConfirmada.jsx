@@ -14,7 +14,7 @@ export default function ReservaConfirmada() {
       ) : (
         <div className="alert success">¡Reserva confirmada! Guarda este QR — es tuyo para siempre.</div>
       )}
-      <ClienteQrCard qrToken={qrToken} heading="Tu identificación en Oxygen" />
+      <ClienteQrCard qrToken={qrToken} heading="Tu identificación en Oxigen" />
       <p style={{ marginTop: 16 }}>
         <Link to="/">Reservar otra clase</Link>
       </p>

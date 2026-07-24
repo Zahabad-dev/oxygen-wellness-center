@@ -83,7 +83,7 @@ export default function Catalogo() {
         <div className="hero-bg" ref={heroBgRef} style={{ backgroundImage: "url('/images/hero.jpg')" }} />
         <div className="hero-overlay" />
         <div className="hero-inner">
-          <span className="hero-eyebrow">Oxygen Wellness Center</span>
+          <span className="hero-eyebrow">Oxigen Wellness Center</span>
           <h1 className="hero-title">Tu espacio para moverte,<br />respirar y <em>pertenecer</em>.</h1>
           <p className="hero-sub">
             Functional Training, Pilates, Yoga, Barre y más — reserva tu lugar en segundos,
@@ -201,13 +201,13 @@ export default function Catalogo() {
       <section className="community">
         <span className="blob" aria-hidden="true" />
         <div className="section-inner">
-          <img className="reveal" src="/images/comunidad.jpg" alt="Comunidad de Oxygen Wellness Center practicando juntas" loading="lazy" decoding="async" />
+          <img className="reveal" src="/images/comunidad.jpg" alt="Comunidad de Oxigen Wellness Center practicando juntas" loading="lazy" decoding="async" />
           <div className="reveal reveal-1">
             <span className="eyebrow">Comunidad</span>
             <h2>No entrenas sola.</h2>
             <blockquote>“Un espacio para cuidarte, a tu ritmo, acompañada.”</blockquote>
             <p style={{ color: 'var(--ink-soft)' }}>
-              En Oxygen creemos que cada cuerpo tiene su propio proceso. Nuestros coaches te acompañan
+              En Oxigen creemos que cada cuerpo tiene su propio proceso. Nuestros coaches te acompañan
               desde tu primera clase — sin presión, sin comparaciones, con técnica y calidez.
             </p>
           </div>
@@ -245,7 +245,7 @@ export default function Catalogo() {
           <a href="#calendario">Calendario</a>
           <a href="/mi-cuenta/login">Mi cuenta</a>
         </div>
-        Oxygen Wellness Center · Reserva sin cuenta, tu QR es tuyo para siempre.
+        Oxigen Wellness Center · Reserva sin cuenta, tu QR es tuyo para siempre.
       </footer>
 
       <BookingModal claseId={modalClaseId} onClose={() => setModalClaseId(null)} />

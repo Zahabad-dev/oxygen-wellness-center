@@ -22,7 +22,7 @@ function Topbar() {
   return (
     <header className="topbar">
       <NavLink to="/" className="brand" style={{ textDecoration: 'none', color: 'inherit' }}>
-        Oxygen Wellness Center
+        Oxigen Wellness Center
       </NavLink>
       <nav>
         {isAuthenticated ? (

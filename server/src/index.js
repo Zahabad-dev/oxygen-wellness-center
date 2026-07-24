@@ -60,5 +60,5 @@ app.use((err, _req, res, _next) => {
 });
 
 app.listen(config.port, () => {
-  console.log(`[server] Oxygen Wellness Center API en puerto ${config.port} (${config.nodeEnv})`);
+  console.log(`[server] Oxigen Wellness Center API en puerto ${config.port} (${config.nodeEnv})`);
 });

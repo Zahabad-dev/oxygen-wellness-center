@@ -1,6 +1,6 @@
-# Oxygen Wellness Center
+# Oxigen Wellness Center
 
-Plataforma de reservas, identidad por QR y operación de estudio para Oxygen Wellness Center.
+Plataforma de reservas, identidad por QR y operación de estudio para Oxigen Wellness Center.
 Mismo patrón técnico que Sianna Travel: **React + Vite** (cliente) + **Node/Express + PostgreSQL** (server),
 pensado para correr en **Easypanel** (sin Vercel).
 
@@ -52,7 +52,7 @@ corre en este orden:
 \i sql/03_seed.sql
 ```
 
-El usuario admin de la semilla es `admin@oxygenwc.com` / `OxygenAdmin2026` — **cámbialo** generando un
+El usuario admin de la semilla es `admin@oxigenwc.com` / `OxygenAdmin2026` — **cámbialo** generando un
 hash nuevo:
 
 ```bash
@@ -69,7 +69,7 @@ cp client/.env.example client/.env
 ```
 
 En `server/.env`, como mínimo:
-- `DATABASE_URL=postgres://oxygen_app:PASSWORD@<host-interno-easypanel>:5432/oxygen`
+- `DATABASE_URL=postgres://oxigen_app:PASSWORD@<host-interno-easypanel>:5432/oxigen`
 - `JWT_SECRET=` — genera uno largo y aleatorio.
 - En producción: `NODE_ENV=production`, `COOKIE_SECURE=1`.
 

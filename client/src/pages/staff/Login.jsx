@@ -29,7 +29,7 @@ export default function Login() {
   return (
     <div className="page" style={{ maxWidth: 380, margin: '0 auto' }}>
       <span className="eyebrow">Acceso staff</span>
-      <h1>Oxygen Wellness Center</h1>
+      <h1>Oxigen Wellness Center</h1>
       <form onSubmit={onSubmit} className="card">
         <div className="field">
           <label htmlFor="email">Correo</label>

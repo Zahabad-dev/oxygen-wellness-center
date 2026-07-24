@@ -25,7 +25,7 @@ export default function ClientPortal() {
   return (
     <div className="page" style={{ maxWidth: 460, margin: '0 auto', textAlign: 'center' }}>
       <span className="eyebrow">Mi cuenta</span>
-      <ClienteQrCard qrToken={qrToken} heading="Tu identificación en Oxygen" />
+      <ClienteQrCard qrToken={qrToken} heading="Tu identificación en Oxigen" />
       <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 16 }}>
         <Link to="/">Reservar una clase</Link>
         <a href="#" onClick={(e) => { e.preventDefault(); salir(); }}>Cerrar sesión</a>
