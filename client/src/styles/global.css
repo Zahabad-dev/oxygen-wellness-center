@@ -280,6 +280,25 @@ thead th { font-family: var(--font-mono); font-size: 10.5px; text-transform: upp
 }
 .hero-cta:hover { background: rgba(253, 248, 240, 0.12); }
 
+/* Destacados — carrusel horizontal deslizable de eventos/ofertas especiales */
+.highlights { background: var(--bg); position: relative; overflow: hidden; }
+.highlight-strip {
+  display: flex; gap: 18px; overflow-x: auto; padding: 6px 4px 14px; scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+.highlight-strip::-webkit-scrollbar { height: 6px; }
+.highlight-strip::-webkit-scrollbar-thumb { background: var(--line); border-radius: 8px; }
+.highlight-card {
+  flex: 0 0 auto; width: min(78vw, 300px); scroll-snap-align: start;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  overflow: hidden; box-shadow: var(--shadow-lift); display: flex; flex-direction: column;
+}
+.highlight-photo { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; display: block; }
+.highlight-body { padding: 16px 18px 20px; }
+.highlight-body h3 { font-size: 16px; margin: 0 0 4px; }
+.highlight-sub { font-size: 12.5px; color: var(--accent-ink); font-weight: 600; margin: 0 0 4px; }
+.highlight-fechas { font-size: 12.5px; color: var(--ink-soft); margin: 0 0 12px; }
+
 /* Disciplinas — tarjeta rectangular con foto + franja glass, igual estilo que Coaches */
 .disciplines { background: var(--surface); position: relative; overflow: hidden; }
 .discipline-strip {

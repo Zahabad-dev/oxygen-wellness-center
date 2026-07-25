@@ -2,9 +2,23 @@ import { useEffect, useRef, useState } from 'react';
 import { apiGet } from '../lib/apiClient.js';
 import { disciplineTheme } from '../lib/disciplineTheme.js';
 import { getWeekDays } from '../lib/dates.js';
+import { waLink } from '../lib/whatsapp.js';
 import BookingModal from '../components/BookingModal.jsx';
 
 const DIAS = getWeekDays(7);
+
+// Eventos y talleres destacados — se agregan aquí a mano conforme surgen.
+const DESTACADOS = [
+  {
+    imagen: '/images/eventos/evento1-poster.jpg',
+    alt: 'Taller de Certificación de Barras de Access con Karla Marín, 25 y 26 de julio',
+    titulo: 'Taller de Certificación de Barras de Access',
+    subtitulo: 'Karla Marín · Facilitadora de Barras de Access',
+    fechas: '25 y 26 de julio · Certificación de 1 día',
+    whatsapp: '527352491512',
+    mensaje: 'Hola, quiero reservar mi lugar para el Taller de Certificación de Barras de Access con Karla Marín (25 y 26 de julio).',
+  },
+];
 
 // Membresías reales del estudio (precio por paquete de clases, individual y dúo).
 const MEMBRESIAS = [
@@ -116,6 +130,34 @@ export default function Catalogo() {
           <a href="#calendario" className="btn hero-cta">Reservar</a>
         </div>
       </section>
+
+      {/* ---------- Destacados ---------- */}
+      {DESTACADOS.length > 0 && (
+        <section id="destacados" className="highlights">
+          <div className="section-inner">
+            <div className="section-head reveal">
+              <span className="eyebrow">Destacados</span>
+              <h2>Eventos y talleres especiales</h2>
+              <p>Ofertas exclusivas y experiencias por tiempo limitado — no te las pierdas.</p>
+            </div>
+            <div className="highlight-strip reveal reveal-1">
+              {DESTACADOS.map((d, i) => (
+                <div key={i} className="highlight-card">
+                  <img className="highlight-photo" src={d.imagen} alt={d.alt} loading="lazy" decoding="async" />
+                  <div className="highlight-body">
+                    <h3>{d.titulo}</h3>
+                    <p className="highlight-sub">{d.subtitulo}</p>
+                    <p className="highlight-fechas">{d.fechas}</p>
+                    <a className="btn btn-primary btn-block" href={waLink(d.whatsapp, d.mensaje)} target="_blank" rel="noreferrer">
+                      Reservar tu lugar
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ---------- Disciplinas ---------- */}
       <section id="disciplinas" className="disciplines">
