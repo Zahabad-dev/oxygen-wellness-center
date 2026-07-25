@@ -128,20 +128,18 @@ export default function Catalogo() {
               return (
                 <button
                   key={d.id}
-                  className={`discipline-card ${disciplinaId === d.id ? 'active' : ''}`}
+                  className={`discipline-tile ${disciplinaId === d.id ? 'active' : ''}`}
                   onClick={() => elegirDisciplina(d.id)}
                 >
                   <img
-                    className="thumb"
+                    className="discipline-tile-photo"
                     src={theme.image}
                     alt={d.nombre}
                     loading="lazy"
                     decoding="async"
-                    style={{ objectPosition: theme.position }}
                   />
-                  <div className="label">
-                    <span className="disc-dot" style={{ background: theme.color }} />
-                    {d.nombre}
+                  <div className="discipline-tile-overlay">
+                    <span className="coach-pill" style={{ '--pill-color': theme.color }}>{d.nombre}</span>
                   </div>
                 </button>
               );
