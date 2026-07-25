@@ -105,17 +105,11 @@ export default function Catalogo() {
       <section className="hero">
         <div className="hero-bg" ref={heroBgRef} style={{ backgroundImage: "url('/images/hero.jpg')" }} />
         <div className="hero-overlay" />
+        <img className="hero-logo" src="/images/logo-oxigen.png" alt="Oxigen Wellness Center" loading="eager" />
         <div className="hero-inner">
-          <span className="hero-eyebrow">Oxigen Wellness Center</span>
-          <h1 className="hero-title">Tu espacio para moverte,<br />respirar y <em>pertenecer</em>.</h1>
-          <p className="hero-sub">
-            Functional Training, Pilates, Yoga, Barre y más — reserva tu lugar en segundos,
-            sin crear una cuenta.
-          </p>
-          <div className="hero-actions">
-            <a href="#calendario" className="btn btn-primary btn-lg">Reservar ahora</a>
-            <a href="#disciplinas" className="btn btn-secondary btn-lg">Ver disciplinas</a>
-          </div>
+          <h1 className="hero-title">Wellness Studio</h1>
+          <p className="hero-sub">Respira, Reconecta y Fluye.</p>
+          <a href="#calendario" className="btn hero-cta">Reservar</a>
         </div>
       </section>
 
@@ -233,14 +227,17 @@ export default function Catalogo() {
             {coaches.map((co) => (
               <div key={co.id} className="coach-card">
                 <img className="coach-photo" src={co.foto_url || '/images/hero.jpg'} alt={co.nombre} loading="lazy" decoding="async" />
-                <div className="coach-name">{co.nombre}</div>
-                <div className="coach-disciplinas">
-                  {co.disciplinas.map((d) => (
-                    <span key={d} className="disc-dot" style={{ background: disciplineTheme(d).color }} title={d} />
-                  ))}
-                  <span className="coach-disc-label">{co.disciplinas.join(' · ')}</span>
+                <div className="coach-card-overlay">
+                  <img className="coach-avatar" src={co.foto_url || '/images/hero.jpg'} alt="" aria-hidden="true" />
+                  <div className="coach-card-info">
+                    <span className="coach-name">{co.nombre}</span>
+                    <div className="coach-pills">
+                      {co.disciplinas.map((d) => (
+                        <span key={d} className="coach-pill" style={{ '--pill-color': disciplineTheme(d).color }}>{d}</span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-                {co.bio && <p className="coach-bio">{co.bio}</p>}
               </div>
             ))}
           </div>
