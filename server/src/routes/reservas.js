@@ -34,9 +34,11 @@ reservasRouter.post('/', async (req, res) => {
         throw err;
       }
 
+      // La identidad del cliente es whatsapp + nombre, no solo el whatsapp: un mismo teléfono
+      // puede pertenecer a varias personas de una misma familia (ej. mamá reservando para su hija).
       let { rows: clienteRows } = await client.query(
-        `SELECT id, nombre, qr_token FROM clientes WHERE whatsapp = $1`,
-        [whatsapp.trim()]
+        `SELECT id, nombre, qr_token FROM clientes WHERE whatsapp = $1 AND lower(nombre) = lower($2)`,
+        [whatsapp.trim(), nombre.trim()]
       );
       let cliente = clienteRows[0];
       if (!cliente) {

@@ -35,17 +35,24 @@ portalRouter.post('/login', asyncHandler(async (req, res) => {
     return res.status(400).json({ error: 'Falta WhatsApp o contraseña.' });
   }
 
+  // Un mismo whatsapp puede pertenecer a varios perfiles (familia compartiendo teléfono),
+  // así que se prueba la contraseña contra cada uno hasta encontrar el que corresponde.
   const { rows } = await query(
-    `SELECT id, nombre, qr_token, password_hash FROM clientes WHERE whatsapp = $1`,
+    `SELECT id, nombre, qr_token, password_hash FROM clientes WHERE whatsapp = $1 AND password_hash IS NOT NULL`,
     [whatsapp.trim()]
   );
-  const cliente = rows[0];
-  if (!cliente || !cliente.password_hash) {
+  if (!rows.length) {
     return res.status(401).json({ error: 'No tienes una cuenta todavía — pídele a recepción que te la active.' });
   }
 
-  const ok = await bcrypt.compare(password, cliente.password_hash);
-  if (!ok) return res.status(401).json({ error: 'WhatsApp o contraseña incorrectos.' });
+  let cliente = null;
+  for (const fila of rows) {
+    if (await bcrypt.compare(password, fila.password_hash)) {
+      cliente = fila;
+      break;
+    }
+  }
+  if (!cliente) return res.status(401).json({ error: 'WhatsApp o contraseña incorrectos.' });
 
   const payload = { id: cliente.id, nombre: cliente.nombre, qrToken: cliente.qr_token };
   const token = jwt.sign(payload, config.jwtSecret, { expiresIn: '30d' });
