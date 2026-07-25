@@ -26,7 +26,7 @@ catalogoRouter.get('/coaches', asyncHandler(async (_req, res) => {
 }));
 
 catalogoRouter.get('/clases', asyncHandler(async (req, res) => {
-  const { disciplina, coach, fecha, nivel } = req.query;
+  const { disciplina, coach, fecha, hasta, nivel } = req.query;
   const clauses = [`c.estado = 'programada'`, `c.fecha >= CURRENT_DATE`];
   const values = [];
 
@@ -41,6 +41,9 @@ catalogoRouter.get('/clases', asyncHandler(async (req, res) => {
   if (fecha) {
     values.push(fecha);
     clauses.push(`c.fecha = $${values.length}`);
+  } else if (hasta) {
+    values.push(hasta);
+    clauses.push(`c.fecha <= $${values.length}`);
   }
   if (nivel) {
     values.push(nivel);

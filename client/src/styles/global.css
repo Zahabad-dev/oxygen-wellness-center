@@ -370,33 +370,42 @@ thead th { font-family: var(--font-mono); font-size: 10.5px; text-transform: upp
 .policy-grid .card h4 { color: var(--accent-ink); margin-bottom: 8px; }
 .policy-grid .card p { color: var(--ink-soft); font-size: 13.5px; margin: 0; }
 
-/* Calendario */
+/* Calendario — semana completa en columnas, clases coloreadas por disciplina */
 .calendar-section { background: var(--bg-deep); position: relative; overflow: hidden; }
 .calendar-section .section-inner { position: relative; z-index: 1; }
-.day-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 18px; }
-.day-tab {
-  flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 2px;
-  padding: 10px 16px; border-radius: var(--radius-sm); border: 1px solid var(--line);
-  background: var(--surface); color: var(--ink-soft); cursor: pointer; min-width: 64px;
-}
-.day-tab .dow { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; }
-.day-tab .num { font-family: var(--font-display); font-size: 18px; font-weight: 600; }
-.day-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-.day-tab.today .dow { color: var(--accent); }
-.day-tab.active .dow { color: #fdf8f0; opacity: 0.85; }
-
-.class-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
-.class-card {
-  text-align: left; cursor: pointer; border: 1px solid var(--line); background: var(--surface);
-  border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow);
-  transition: transform 0.15s ease, box-shadow 0.15s ease; border-left: 4px solid var(--card-color, var(--accent));
-}
-.class-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); }
-.class-card .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-.class-card .hora { font-family: var(--font-display); font-size: 20px; font-weight: 600; }
-.class-card .disciplina { font-weight: 600; margin-bottom: 2px; }
-.class-card .meta { font-size: 12.5px; color: var(--ink-soft); margin-bottom: 10px; }
 .empty-state { padding: 40px 20px; text-align: center; color: var(--ink-faint); background: var(--surface); border-radius: var(--radius); border: 1px dashed var(--line); }
+
+.week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; align-items: start; }
+@media (max-width: 960px) { .week-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 640px) { .week-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.week-day {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 10px 8px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 8px; min-height: 100%;
+}
+.week-day.today { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent), var(--shadow); }
+.week-day-head {
+  display: flex; flex-direction: column; align-items: center; gap: 1px; padding-bottom: 6px;
+  border-bottom: 1px solid var(--line); text-align: center;
+}
+.week-day-head .dow { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); }
+.week-day.today .week-day-head .dow { color: var(--accent); font-weight: 700; }
+.week-day-head .num { font-family: var(--font-display); font-size: 17px; font-weight: 600; }
+.week-day-slots { display: flex; flex-direction: column; gap: 6px; }
+.week-day-empty { text-align: center; color: var(--ink-faint); font-size: 12px; padding: 8px 0; }
+
+.week-class {
+  text-align: left; cursor: pointer; border: none; border-left: 3px solid var(--card-color, var(--accent));
+  border-radius: 8px; padding: 7px 8px; display: flex; flex-direction: column; gap: 1px;
+  background: color-mix(in srgb, var(--card-color, var(--accent)) 14%, var(--surface));
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.week-class:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+.week-class-hora { font-family: var(--font-display); font-size: 13.5px; font-weight: 700; }
+.week-class-disc { font-size: 11.5px; font-weight: 600; color: var(--card-color, var(--accent-ink)); }
+.week-class-meta { font-size: 10.5px; color: var(--ink-soft); }
+.week-class-cupo { font-size: 10px; color: var(--ink-faint); }
+.week-class-cupo.lleno { color: var(--critical); font-weight: 600; }
 
 /* Comunidad */
 .community { background: var(--surface); position: relative; overflow: hidden; }

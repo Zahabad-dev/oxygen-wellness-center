@@ -32,7 +32,6 @@ export default function Catalogo() {
   const [coaches, setCoaches] = useState([]);
   const [clases, setClases] = useState([]);
   const [disciplinaId, setDisciplinaId] = useState(null);
-  const [dia, setDia] = useState(DIAS[0].iso);
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(true);
   const [modalClaseId, setModalClaseId] = useState(null);
@@ -46,18 +45,23 @@ export default function Catalogo() {
 
   useEffect(() => {
     setCargando(true);
-    const params = new URLSearchParams({ fecha: dia });
+    const params = new URLSearchParams({ hasta: DIAS[DIAS.length - 1].iso });
     if (disciplinaId) params.set('disciplina', disciplinaId);
     apiGet(`/clases?${params.toString()}`)
       .then((data) => { setClases(data); setError(''); })
       .catch((err) => setError(err.message))
       .finally(() => setCargando(false));
-  }, [disciplinaId, dia]);
+  }, [disciplinaId]);
 
   function elegirDisciplina(id) {
     setDisciplinaId((current) => (current === id ? null : id));
     document.getElementById('calendario')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
+
+  const clasesPorDia = DIAS.map((d) => ({
+    ...d,
+    clases: clases.filter((c) => c.fecha === d.iso).sort((a, b) => a.hora_inicio.localeCompare(b.hora_inicio)),
+  }));
 
   // Parallax sutil del hero + aparición de secciones al hacer scroll.
   useEffect(() => {
@@ -155,20 +159,7 @@ export default function Catalogo() {
           <div className="section-head reveal">
             <span className="eyebrow">Calendario</span>
             <h2>Reserva tu clase</h2>
-            <p>Elige el día y, si quieres, filtra por disciplina.</p>
-          </div>
-
-          <div className="day-tabs">
-            {DIAS.map((d) => (
-              <button
-                key={d.iso}
-                className={`day-tab ${dia === d.iso ? 'active' : ''} ${d.isToday ? 'today' : ''}`}
-                onClick={() => setDia(d.iso)}
-              >
-                <span className="dow">{d.isToday ? 'Hoy' : d.dow}</span>
-                <span className="num">{d.num}</span>
-              </button>
-            ))}
+            <p>Así se ve tu semana completa — toca una disciplina para ver solo esas clases.</p>
           </div>
 
           <div className="chip-row">
@@ -188,34 +179,44 @@ export default function Catalogo() {
           {error && <div className="alert error">{error}</div>}
           {cargando && <div className="page-loading">Cargando clases…</div>}
           {!cargando && !error && clases.length === 0 && (
-            <div className="empty-state">No hay clases programadas ese día con esos filtros.</div>
+            <div className="empty-state">No hay clases programadas con esos filtros.</div>
           )}
 
-          <div className="class-grid">
-            {clases.map((c) => {
-              const theme = disciplineTheme(c.disciplina_nombre);
-              const lleno = c.cupoDisponible <= 0;
-              return (
-                <button
-                  key={c.id}
-                  className="class-card"
-                  style={{ '--card-color': c.disciplina_color || theme.color }}
-                  onClick={() => setModalClaseId(c.id)}
-                >
-                  <div className="top">
-                    <span className="hora">{c.hora_inicio?.slice(0, 5)}</span>
-                    {c.nivel && <span className="pill accent">{c.nivel}</span>}
+          {!cargando && !error && clases.length > 0 && (
+            <div className="week-grid">
+              {clasesPorDia.map((d) => (
+                <div key={d.iso} className={`week-day ${d.isToday ? 'today' : ''}`}>
+                  <div className="week-day-head">
+                    <span className="dow">{d.isToday ? 'Hoy' : d.dow}</span>
+                    <span className="num">{d.num}</span>
                   </div>
-                  <div className="disciplina">{c.disciplina_nombre}</div>
-                  <div className="meta">{c.coach_nombre} · {c.duracion_minutos} min · {c.salon_nombre}</div>
-                  <div className="progress"><span style={{ width: `${Math.min(100, Math.round((c.confirmadas / c.capacidad_maxima) * 100))}%`, background: lleno ? 'var(--critical)' : undefined }} /></div>
-                  <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--ink-soft)' }}>
-                    {lleno ? 'Llena — lista de espera' : `${c.cupoDisponible} lugares`}
-                  </p>
-                </button>
-              );
-            })}
-          </div>
+                  <div className="week-day-slots">
+                    {d.clases.length === 0 && <span className="week-day-empty">—</span>}
+                    {d.clases.map((c) => {
+                      const theme = disciplineTheme(c.disciplina_nombre);
+                      const color = c.disciplina_color || theme.color;
+                      const lleno = c.cupoDisponible <= 0;
+                      return (
+                        <button
+                          key={c.id}
+                          className="week-class"
+                          style={{ '--card-color': color }}
+                          onClick={() => setModalClaseId(c.id)}
+                        >
+                          <span className="week-class-hora">{c.hora_inicio?.slice(0, 5)}</span>
+                          <span className="week-class-disc">{c.disciplina_nombre}</span>
+                          <span className="week-class-meta">{c.coach_nombre}</span>
+                          <span className={`week-class-cupo ${lleno ? 'lleno' : ''}`}>
+                            {lleno ? 'Lista de espera' : `${c.cupoDisponible} lugares`}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
