@@ -131,7 +131,14 @@ export default function Catalogo() {
                   className={`discipline-card ${disciplinaId === d.id ? 'active' : ''}`}
                   onClick={() => elegirDisciplina(d.id)}
                 >
-                  <img className="thumb" src={theme.image} alt={d.nombre} loading="lazy" decoding="async" />
+                  <img
+                    className="thumb"
+                    src={theme.image}
+                    alt={d.nombre}
+                    loading="lazy"
+                    decoding="async"
+                    style={{ objectPosition: theme.position }}
+                  />
                   <div className="label">
                     <span className="disc-dot" style={{ background: theme.color }} />
                     {d.nombre}
