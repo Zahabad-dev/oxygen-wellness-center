@@ -103,7 +103,7 @@ export default function Catalogo() {
     <div className="landing" ref={landingRef}>
       {/* ---------- Hero ---------- */}
       <section className="hero">
-        <div className="hero-bg" ref={heroBgRef} style={{ backgroundImage: "url('/images/hero.jpg')" }} />
+        <div className="hero-bg" ref={heroBgRef} style={{ backgroundImage: "url('/images/hero-image.png')" }} />
         <div className="hero-overlay" />
         <img className="hero-logo" src="/images/logo-oxigen.png" alt="Oxigen Wellness Center" loading="eager" />
         <div className="hero-inner">
