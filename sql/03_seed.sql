@@ -70,8 +70,8 @@ WHERE d.nombre = 'Yoga' AND c.nombre = 'Coach Demo' AND s.nombre = 'Salón A';
 -- Configuración general — reglas de negocio con valores por defecto (editables después desde Admin)
 INSERT INTO configuracion_general (clave, valor, descripcion) VALUES
   ('ventana_checkin_minutos_antes', '15', 'Minutos antes de la hora de inicio en que se permite hacer check-in.'),
-  ('ventana_checkin_minutos_despues', '15', 'Minutos después de la hora de inicio en que aún se permite hacer check-in.'),
-  ('ventana_cancelacion_horas', '3', 'Horas antes de la clase en que el cliente puede cancelar sin penalización.'),
+  ('ventana_checkin_minutos_despues', '6', 'Minutos después de la hora de inicio en que aún se permite hacer check-in (política real del estudio: corte a los 6 min).'),
+  ('ventana_cancelacion_horas', '4', 'Horas antes de la clase en que el cliente puede cancelar sin penalización (política real del estudio).'),
   ('tiempo_limite_lista_espera_minutos', '15', 'Minutos que tiene el siguiente en la fila para confirmar cuando se libera un lugar.')
 ON CONFLICT (clave) DO NOTHING;
 

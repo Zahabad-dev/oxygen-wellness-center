@@ -11,6 +11,20 @@ catalogoRouter.get('/disciplinas', asyncHandler(async (_req, res) => {
   res.json(rows);
 }));
 
+catalogoRouter.get('/coaches', asyncHandler(async (_req, res) => {
+  const { rows } = await query(
+    `SELECT co.id, co.nombre, co.bio, co.foto_url,
+       COALESCE(array_agg(d.nombre ORDER BY d.nombre) FILTER (WHERE d.id IS NOT NULL), '{}') AS disciplinas
+     FROM coaches co
+     LEFT JOIN coach_disciplinas cd ON cd.coach_id = co.id
+     LEFT JOIN disciplinas d ON d.id = cd.disciplina_id AND d.activo = true
+     WHERE co.activo = true
+     GROUP BY co.id
+     ORDER BY co.nombre`
+  );
+  res.json(rows);
+}));
+
 catalogoRouter.get('/clases', asyncHandler(async (req, res) => {
   const { disciplina, coach, fecha, nivel } = req.query;
   const clauses = [`c.estado = 'programada'`, `c.fecha >= CURRENT_DATE`];

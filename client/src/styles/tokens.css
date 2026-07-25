@@ -21,13 +21,9 @@
 
   /* Colores por disciplina — categórica, cálida, no choca con el acento */
   --d-functional: #b0653f;
-  --d-pilates: #8a6f52;
-  --d-yoga: #6f7d4f;
-  --d-barre: #b5768a;
-  --d-mobility: #6e8478;
-  --d-stretch: #ab8a52;
-  --d-hiit: #a3503f;
-  --d-meditation: #6b6a8a;
+  --d-pilates: #7a5c7e;
+  --d-sculpt: #8a5c42;
+  --d-baile: #a8433a;
 
   --radius: 14px;
   --radius-sm: 9px;

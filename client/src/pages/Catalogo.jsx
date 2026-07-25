@@ -6,8 +6,30 @@ import BookingModal from '../components/BookingModal.jsx';
 
 const DIAS = getWeekDays(7);
 
+// Membresías reales del estudio (precio por paquete de clases, individual y dúo).
+const MEMBRESIAS = [
+  { clases: 1, individual: 85, duo: 85 },
+  { clases: 4, individual: 320, duo: 320 },
+  { clases: 8, individual: 640, duo: 600 },
+  { clases: 12, individual: 840, duo: 800 },
+  { clases: 16, individual: 1040, duo: 1000 },
+  { clases: 20, individual: 1240, duo: 1200 },
+];
+const money = (n) => `$${n.toLocaleString('es-MX')}`;
+
+// Horario semanal recurrente real del estudio (coincide con las clases generadas en agenda).
+const HORARIO_SEMANA = [
+  { dia: 'Lunes', clases: [['07:00', 'Funcional'], ['08:00', 'Sculpt'], ['18:00', 'Sculpt'], ['19:00', 'Pilates'], ['20:00', 'Baile']] },
+  { dia: 'Martes', clases: [['08:00', 'Baile'], ['19:00', 'Funcional']] },
+  { dia: 'Miércoles', clases: [['07:00', 'Funcional'], ['08:00', 'Sculpt'], ['18:00', 'Pilates'], ['19:00', 'Baile']] },
+  { dia: 'Jueves', clases: [['08:00', 'Baile'], ['19:00', 'Funcional']] },
+  { dia: 'Viernes', clases: [['07:00', 'Funcional'], ['08:00', 'Pilates'], ['19:00', 'Baile']] },
+  { dia: 'Sábado', clases: [['08:00', 'Funcional']] },
+];
+
 export default function Catalogo() {
   const [disciplinas, setDisciplinas] = useState([]);
+  const [coaches, setCoaches] = useState([]);
   const [clases, setClases] = useState([]);
   const [disciplinaId, setDisciplinaId] = useState(null);
   const [dia, setDia] = useState(DIAS[0].iso);
@@ -19,6 +41,7 @@ export default function Catalogo() {
 
   useEffect(() => {
     apiGet('/disciplinas').then(setDisciplinas).catch(() => {});
+    apiGet('/coaches').then(setCoaches).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -197,6 +220,91 @@ export default function Catalogo() {
         </div>
       </section>
 
+      {/* ---------- Coaches ---------- */}
+      <section id="coaches" className="disciplines">
+        <span className="blob" aria-hidden="true" />
+        <div className="section-inner">
+          <div className="section-head center reveal">
+            <span className="eyebrow">Nuestro equipo</span>
+            <h2>Coaches Oxigen</h2>
+            <p>Cada disciplina tiene su coach — conócelos antes de tu primera clase.</p>
+          </div>
+          <div className="grid cols-4 coach-grid reveal reveal-1">
+            {coaches.map((co) => (
+              <div key={co.id} className="coach-card">
+                <img className="coach-photo" src={co.foto_url || '/images/hero.jpg'} alt={co.nombre} loading="lazy" decoding="async" />
+                <div className="coach-name">{co.nombre}</div>
+                <div className="coach-disciplinas">
+                  {co.disciplinas.map((d) => (
+                    <span key={d} className="disc-dot" style={{ background: disciplineTheme(d).color }} title={d} />
+                  ))}
+                  <span className="coach-disc-label">{co.disciplinas.join(' · ')}</span>
+                </div>
+                {co.bio && <p className="coach-bio">{co.bio}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ---------- Horarios ---------- */}
+      <section id="horarios" className="calendar-section">
+        <span className="blob" aria-hidden="true" />
+        <div className="section-inner">
+          <div className="section-head reveal">
+            <span className="eyebrow">Horarios</span>
+            <h2>Nuestra semana</h2>
+            <p>El horario recurrente de cada semana — filtra por día y disciplina más arriba para reservar.</p>
+          </div>
+          <div className="schedule-grid reveal reveal-1">
+            {HORARIO_SEMANA.map(({ dia, clases: horas }) => (
+              <div key={dia} className="schedule-day">
+                <div className="schedule-day-name">{dia}</div>
+                <div className="schedule-slots">
+                  {horas.map(([hora, disc]) => {
+                    const theme = disciplineTheme(disc);
+                    return (
+                      <div key={hora + disc} className="schedule-slot" style={{ '--slot-color': theme.color }}>
+                        <span className="schedule-hora">{hora}</span>
+                        <span className="schedule-disc">{disc}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ---------- Membresías ---------- */}
+      <section id="membresias" className="disciplines">
+        <span className="blob" aria-hidden="true" />
+        <div className="section-inner">
+          <div className="section-head center reveal">
+            <span className="eyebrow">Membresías</span>
+            <h2>Elige tu paquete</h2>
+            <p>Entre más clases, mejor precio por clase — el precio Dúo aplica por persona, viniendo acompañada.</p>
+          </div>
+          <div className="pricing-table reveal reveal-1">
+            <table>
+              <thead>
+                <tr><th>Clases</th><th>Individual</th><th>Dúo c/u</th></tr>
+              </thead>
+              <tbody>
+                {MEMBRESIAS.map((m) => (
+                  <tr key={m.clases}>
+                    <td>{m.clases} {m.clases === 1 ? 'clase' : 'clases'}</td>
+                    <td>{money(m.individual)}</td>
+                    <td>{money(m.duo)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
       {/* ---------- Comunidad ---------- */}
       <section className="community">
         <span className="blob" aria-hidden="true" />
@@ -210,6 +318,43 @@ export default function Catalogo() {
               En Oxigen creemos que cada cuerpo tiene su propio proceso. Nuestros coaches te acompañan
               desde tu primera clase — sin presión, sin comparaciones, con técnica y calidez.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ---------- Políticas ---------- */}
+      <section id="politicas" className="calendar-section">
+        <span className="blob" aria-hidden="true" />
+        <div className="section-inner">
+          <div className="section-head reveal">
+            <span className="eyebrow">Políticas</span>
+            <h2>Para que tu experiencia sea la mejor</h2>
+            <p>Léelas antes de tu primera clase — nos ayudan a mantener el espacio a tiempo y en orden para todas.</p>
+          </div>
+          <div className="grid cols-2 policy-grid reveal reveal-1">
+            <div className="card">
+              <h4>Cancelaciones y cambios</h4>
+              <p>Puedes cancelar o cambiar tu clase hasta <strong>4 horas antes</strong> sin costo. Si cancelas después
+                de ese margen o no te presentas, cuenta como falta. Al acumular <strong>3 faltas</strong> se aplica
+                una penalización de <strong>$85</strong> y tu membresía puede congelarse hasta regularizar tu situación.</p>
+            </div>
+            <div className="card">
+              <h4>Puntualidad y horarios</h4>
+              <p>El check-in cierra <strong>6 minutos</strong> después de la hora de inicio de la clase — pasado ese
+                tiempo ya no se puede entrar, para no interrumpir a tus compañeras ni al coach. Llega con unos
+                minutos de anticipación para prepararte con calma.</p>
+            </div>
+            <div className="card">
+              <h4>Antes de tu clase</h4>
+              <p>Trae ropa deportiva cómoda, tenis limpios (algunas disciplinas piden tenis exclusivos de estudio),
+                toalla pequeña y tu botella de agua. Si tienes alguna condición de salud, lesión o estás embarazada,
+                avísale a tu coach antes de empezar.</p>
+            </div>
+            <div className="card">
+              <h4>Cuidemos el espacio</h4>
+              <p>Al terminar tu clase, deja el equipo y tu área limpios y ordenados para la siguiente persona.
+                Cualquier daño al equipo o instalaciones repórtalo de inmediato en recepción.</p>
+            </div>
           </div>
         </div>
       </section>
@@ -243,6 +388,10 @@ export default function Catalogo() {
         <div className="footer-links">
           <a href="#disciplinas">Disciplinas</a>
           <a href="#calendario">Calendario</a>
+          <a href="#coaches">Coaches</a>
+          <a href="#horarios">Horarios</a>
+          <a href="#membresias">Membresías</a>
+          <a href="#politicas">Políticas</a>
           <a href="/mi-cuenta/login">Mi cuenta</a>
         </div>
         Oxigen Wellness Center · Reserva sin cuenta, tu QR es tuyo para siempre.
