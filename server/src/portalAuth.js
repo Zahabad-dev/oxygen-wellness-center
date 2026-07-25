@@ -9,11 +9,16 @@ import { asyncHandler } from './asyncHandler.js';
 // la identidad para check-in — esto es un canal aparte para que el cliente vea su
 // cuenta sin depender del link. Cookie propia, distinta a la de staff.
 
+// Sesión de larga duración a propósito: el cliente no debe tener que volver a iniciar
+// sesión — el portal solo expone sus propios datos de bajo riesgo (QR, reservas,
+// historial), sin pagos en línea ni datos de otros clientes.
+const SESION_DURACION_MS = 10 * 365 * 24 * 60 * 60 * 1000; // ~10 años
+
 const cookieOpts = {
   httpOnly: true,
   secure: config.cookieSecure,
   sameSite: config.cookieSecure ? 'none' : 'lax',
-  maxAge: 30 * 24 * 60 * 60 * 1000,
+  maxAge: SESION_DURACION_MS,
 };
 
 export function requireClienteAuth(req, res, next) {
@@ -92,7 +97,7 @@ portalRouter.post('/login', asyncHandler(async (req, res) => {
   if (!cliente) return res.status(401).json({ error: 'WhatsApp o contraseña incorrectos.' });
 
   const payload = { id: cliente.id, nombre: cliente.nombre, qrToken: cliente.qr_token };
-  const token = jwt.sign(payload, config.jwtSecret, { expiresIn: '30d' });
+  const token = jwt.sign(payload, config.jwtSecret, { expiresIn: SESION_DURACION_MS / 1000 });
   res.cookie(config.clientCookieName, token, cookieOpts);
   res.json({ cliente: payload });
 }));
