@@ -6,6 +6,7 @@ export default function AdminNav() {
       <NavLink to="/admin/coaches" className={({ isActive }) => `chip ${isActive ? 'active' : ''}`}>Coaches</NavLink>
       <NavLink to="/admin/clases" className={({ isActive }) => `chip ${isActive ? 'active' : ''}`}>Clases</NavLink>
       <NavLink to="/admin/usuarios" className={({ isActive }) => `chip ${isActive ? 'active' : ''}`}>Usuarios</NavLink>
+      <NavLink to="/admin/recompensas" className={({ isActive }) => `chip ${isActive ? 'active' : ''}`}>Recompensas</NavLink>
       <NavLink to="/staff/clientes" className={({ isActive }) => `chip ${isActive ? 'active' : ''}`}>Clientes</NavLink>
     </div>
   );

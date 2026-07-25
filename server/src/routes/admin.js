@@ -280,3 +280,49 @@ adminRouter.delete('/clientes/:id', asyncHandler(async (req, res) => {
   await query(`DELETE FROM clientes WHERE id = $1`, [req.params.id]);
   res.json({ ok: true });
 }));
+
+// ---------- Recompensa por lealtad: una sola regla editable (cada N clases → una recompensa) ----------
+adminRouter.get('/recompensa', asyncHandler(async (_req, res) => {
+  let { rows } = await query(
+    `SELECT id, reglas, beneficio, activo FROM promociones WHERE tipo = 'lealtad_clases' LIMIT 1`
+  );
+  if (!rows[0]) {
+    const inserted = await query(
+      `INSERT INTO promociones (nombre, tipo, reglas, beneficio, activo)
+       VALUES ('Recompensa por lealtad', 'lealtad_clases', '{"clases_requeridas": 10}'::jsonb, '{"descripcion": "10% de descuento en tu siguiente clase"}'::jsonb, true)
+       RETURNING id, reglas, beneficio, activo`
+    );
+    rows = inserted.rows;
+  }
+  const p = rows[0];
+  res.json({
+    id: p.id,
+    clasesRequeridas: p.reglas?.clases_requeridas ?? 10,
+    descripcion: p.beneficio?.descripcion ?? '',
+    activo: p.activo,
+  });
+}));
+
+adminRouter.put('/recompensa', asyncHandler(async (req, res) => {
+  const { clasesRequeridas, descripcion, activo } = req.body || {};
+  const n = Number(clasesRequeridas);
+  if (!Number.isInteger(n) || n < 1) {
+    return res.status(400).json({ error: 'El número de clases debe ser un entero mayor a 0.' });
+  }
+  if (!descripcion?.trim()) {
+    return res.status(400).json({ error: 'Describe la recompensa.' });
+  }
+
+  const { rows } = await query(
+    `UPDATE promociones
+     SET reglas = jsonb_build_object('clases_requeridas', $1::int),
+         beneficio = jsonb_build_object('descripcion', $2::text),
+         activo = $3
+     WHERE tipo = 'lealtad_clases'
+     RETURNING id, reglas, beneficio, activo`,
+    [n, descripcion.trim(), activo !== false]
+  );
+  if (!rows[0]) return res.status(404).json({ error: 'No existe la regla de recompensa — recarga la página.' });
+  const p = rows[0];
+  res.json({ id: p.id, clasesRequeridas: p.reglas.clases_requeridas, descripcion: p.beneficio.descripcion, activo: p.activo });
+}));
