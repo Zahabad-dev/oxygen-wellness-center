@@ -43,6 +43,28 @@ staffRouter.get('/agenda-hoy', asyncHandler(async (req, res) => {
   res.json(rows);
 }));
 
+// ---------- Seguimiento a clientes nuevos: reservas confirmadas que arrancan en <= 2h,
+// de clientes que reservan por primera vez (recepción y admin, para recordarles avisar por WhatsApp) ----------
+staffRouter.get('/seguimientos', asyncHandler(async (req, res) => {
+  if (!['administrador', 'recepcion'].includes(req.staff.rol)) {
+    return res.status(403).json({ error: 'No tienes permiso para ver esto.' });
+  }
+
+  const { rows } = await query(
+    `SELECT r.id AS reserva_id, cl.id AS cliente_id, cl.nombre, cl.whatsapp,
+            c.fecha, c.hora_inicio, d.nombre AS disciplina_nombre
+     FROM reservas r
+     JOIN clases c ON c.id = r.clase_id
+     JOIN clientes cl ON cl.id = r.cliente_id
+     JOIN disciplinas d ON d.id = c.disciplina_id
+     WHERE r.estado = 'confirmada'
+       AND (c.fecha + c.hora_inicio) BETWEEN now() AND now() + interval '2 hours'
+       AND (SELECT count(*) FROM reservas r2 WHERE r2.cliente_id = cl.id) = 1
+     ORDER BY c.fecha, c.hora_inicio`
+  );
+  res.json(rows);
+}));
+
 // ---------- Clientes: lista + buscador (recepción y admin) ----------
 staffRouter.get('/clientes', asyncHandler(async (req, res) => {
   const buscar = (req.query.buscar || '').trim();

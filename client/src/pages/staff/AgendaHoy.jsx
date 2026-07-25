@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiGet } from '../../lib/apiClient.js';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { waLink, mensajeSeguimiento } from '../../lib/whatsapp.js';
 
 const ESTADO_LABEL = {
   confirmada: { text: 'confirmada', className: 'success' },
@@ -12,6 +13,7 @@ const ESTADO_LABEL = {
 export default function AgendaHoy() {
   const { user } = useAuth();
   const [clases, setClases] = useState([]);
+  const [seguimientos, setSeguimientos] = useState([]);
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(true);
 
@@ -22,6 +24,16 @@ export default function AgendaHoy() {
       .finally(() => setCargando(false));
   }, []);
 
+  useEffect(() => {
+    if (!['administrador', 'recepcion'].includes(user.rol)) return;
+    function cargarSeguimientos() {
+      apiGet('/staff/seguimientos').then(setSeguimientos).catch(() => {});
+    }
+    cargarSeguimientos();
+    const id = setInterval(cargarSeguimientos, 5 * 60 * 1000);
+    return () => clearInterval(id);
+  }, [user.rol]);
+
   return (
     <div className="page">
       <span className="eyebrow">Hoy</span>
@@ -29,6 +41,29 @@ export default function AgendaHoy() {
       <p style={{ color: 'var(--ink-soft)' }}>
         {user.rol === 'coach' ? 'Tus clases de hoy.' : 'Todas las clases del centro.'}
       </p>
+
+      {seguimientos.length > 0 && (
+        <div className="alert warning" style={{ marginBottom: 18 }}>
+          <strong>Seguimiento a clientes nuevos:</strong> {seguimientos.length === 1 ? 'tienes 1 cliente nuevo' : `tienes ${seguimientos.length} clientes nuevos`} con clase en las próximas 2 horas — dales la bienvenida por WhatsApp antes de que lleguen.
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
+            {seguimientos.map((s) => (
+              <div key={s.reserva_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', padding: '8px 12px' }}>
+                <span>
+                  <strong>{s.nombre}</strong> · {s.disciplina_nombre} a las {s.hora_inicio?.slice(0, 5)}
+                </span>
+                <a
+                  className="btn btn-primary"
+                  href={waLink(s.whatsapp, mensajeSeguimiento(s))}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Enviar seguimiento por WhatsApp
+                </a>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {error && <div className="alert error">{error}</div>}
       {cargando && <div className="page-loading">Cargando…</div>}
