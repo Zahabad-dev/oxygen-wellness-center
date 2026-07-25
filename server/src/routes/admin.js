@@ -8,6 +8,49 @@ const ROLES_VALIDOS = ['administrador', 'recepcion', 'coach'];
 
 export const adminRouter = Router();
 
+// ---------- Destacados: eventos/talleres especiales del carrusel del landing ----------
+adminRouter.get('/destacados', asyncHandler(async (_req, res) => {
+  const { rows } = await query(
+    `SELECT id, titulo, subtitulo, fechas, imagen_url, whatsapp, mensaje, orden, activo
+     FROM destacados ORDER BY orden, id`
+  );
+  res.json(rows);
+}));
+
+adminRouter.post('/destacados', asyncHandler(async (req, res) => {
+  const { titulo, subtitulo, fechas, imagenUrl, whatsapp, mensaje, orden, activo } = req.body || {};
+  if (!titulo?.trim()) return res.status(400).json({ error: 'El título es obligatorio.' });
+  if (!imagenUrl?.trim()) return res.status(400).json({ error: 'La imagen es obligatoria.' });
+
+  const { rows } = await query(
+    `INSERT INTO destacados (titulo, subtitulo, fechas, imagen_url, whatsapp, mensaje, orden, activo)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+    [titulo.trim(), subtitulo?.trim() || null, fechas?.trim() || null, imagenUrl.trim(),
+     whatsapp?.trim() || null, mensaje?.trim() || null, Number(orden) || 0, activo !== false]
+  );
+  res.status(201).json({ id: rows[0].id });
+}));
+
+adminRouter.put('/destacados/:id', asyncHandler(async (req, res) => {
+  const { titulo, subtitulo, fechas, imagenUrl, whatsapp, mensaje, orden, activo } = req.body || {};
+  if (!titulo?.trim()) return res.status(400).json({ error: 'El título es obligatorio.' });
+  if (!imagenUrl?.trim()) return res.status(400).json({ error: 'La imagen es obligatoria.' });
+
+  await query(
+    `UPDATE destacados
+     SET titulo = $1, subtitulo = $2, fechas = $3, imagen_url = $4, whatsapp = $5, mensaje = $6, orden = $7, activo = $8
+     WHERE id = $9`,
+    [titulo.trim(), subtitulo?.trim() || null, fechas?.trim() || null, imagenUrl.trim(),
+     whatsapp?.trim() || null, mensaje?.trim() || null, Number(orden) || 0, activo !== false, req.params.id]
+  );
+  res.json({ ok: true });
+}));
+
+adminRouter.delete('/destacados/:id', asyncHandler(async (req, res) => {
+  await query(`DELETE FROM destacados WHERE id = $1`, [req.params.id]);
+  res.json({ ok: true });
+}));
+
 // ---------- Salones (solo lectura por ahora — se crean vía seed/SQL) ----------
 adminRouter.get('/salones', asyncHandler(async (_req, res) => {
   const { rows } = await query(

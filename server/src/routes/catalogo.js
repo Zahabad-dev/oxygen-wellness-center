@@ -11,6 +11,14 @@ catalogoRouter.get('/disciplinas', asyncHandler(async (_req, res) => {
   res.json(rows);
 }));
 
+catalogoRouter.get('/destacados', asyncHandler(async (_req, res) => {
+  const { rows } = await query(
+    `SELECT id, titulo, subtitulo, fechas, imagen_url, whatsapp, mensaje
+     FROM destacados WHERE activo = true ORDER BY orden, id`
+  );
+  res.json(rows);
+}));
+
 catalogoRouter.get('/coaches', asyncHandler(async (_req, res) => {
   const { rows } = await query(
     `SELECT co.id, co.nombre, co.bio, co.foto_url,

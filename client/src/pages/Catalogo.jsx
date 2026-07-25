@@ -7,19 +7,6 @@ import BookingModal from '../components/BookingModal.jsx';
 
 const DIAS = getWeekDays(7);
 
-// Eventos y talleres destacados — se agregan aquí a mano conforme surgen.
-const DESTACADOS = [
-  {
-    imagen: '/images/eventos/evento1-poster.jpg',
-    alt: 'Taller de Certificación de Barras de Access con Karla Marín, 25 y 26 de julio',
-    titulo: 'Taller de Certificación de Barras de Access',
-    subtitulo: 'Karla Marín · Facilitadora de Barras de Access',
-    fechas: '25 y 26 de julio · Certificación de 1 día',
-    whatsapp: '527352491512',
-    mensaje: 'Hola, quiero reservar mi lugar para el Taller de Certificación de Barras de Access con Karla Marín (25 y 26 de julio).',
-  },
-];
-
 // Membresías reales del estudio (precio por paquete de clases, individual y dúo).
 const MEMBRESIAS = [
   { clases: 1, individual: 85, duo: 85 },
@@ -44,6 +31,7 @@ const HORARIO_SEMANA = [
 export default function Catalogo() {
   const [disciplinas, setDisciplinas] = useState([]);
   const [coaches, setCoaches] = useState([]);
+  const [destacados, setDestacados] = useState([]);
   const [clases, setClases] = useState([]);
   const [disciplinaId, setDisciplinaId] = useState(null);
   const [error, setError] = useState('');
@@ -55,6 +43,7 @@ export default function Catalogo() {
   useEffect(() => {
     apiGet('/disciplinas').then(setDisciplinas).catch(() => {});
     apiGet('/coaches').then(setCoaches).catch(() => {});
+    apiGet('/destacados').then(setDestacados).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -132,7 +121,7 @@ export default function Catalogo() {
       </section>
 
       {/* ---------- Destacados ---------- */}
-      {DESTACADOS.length > 0 && (
+      {destacados.length > 0 && (
         <section id="destacados" className="highlights">
           <div className="section-inner">
             <div className="section-head reveal">
@@ -141,16 +130,18 @@ export default function Catalogo() {
               <p>Ofertas exclusivas y experiencias por tiempo limitado — no te las pierdas.</p>
             </div>
             <div className="highlight-strip reveal reveal-1">
-              {DESTACADOS.map((d, i) => (
-                <div key={i} className="highlight-card">
-                  <img className="highlight-photo" src={d.imagen} alt={d.alt} loading="lazy" decoding="async" />
+              {destacados.map((d) => (
+                <div key={d.id} className="highlight-card">
+                  <img className="highlight-photo" src={d.imagen_url} alt={d.titulo} loading="lazy" decoding="async" />
                   <div className="highlight-body">
                     <h3>{d.titulo}</h3>
-                    <p className="highlight-sub">{d.subtitulo}</p>
-                    <p className="highlight-fechas">{d.fechas}</p>
-                    <a className="btn btn-primary btn-block" href={waLink(d.whatsapp, d.mensaje)} target="_blank" rel="noreferrer">
-                      Reservar tu lugar
-                    </a>
+                    {d.subtitulo && <p className="highlight-sub">{d.subtitulo}</p>}
+                    {d.fechas && <p className="highlight-fechas">{d.fechas}</p>}
+                    {d.whatsapp && (
+                      <a className="btn btn-primary btn-block" href={waLink(d.whatsapp, d.mensaje || '')} target="_blank" rel="noreferrer">
+                        Reservar tu lugar
+                      </a>
+                    )}
                   </div>
                 </div>
               ))}
