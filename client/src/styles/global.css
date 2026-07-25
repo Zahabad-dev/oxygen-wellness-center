@@ -104,6 +104,7 @@ main { flex: 1; width: 100%; }
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  text-decoration: none;
   transition: filter 0.15s ease, transform 0.15s ease;
 }
 .btn:hover { filter: brightness(0.96); }
@@ -251,12 +252,15 @@ thead th { font-family: var(--font-mono); font-size: 10.5px; text-transform: upp
 }
 .hero-bg {
   position: absolute; inset: -10% 0; z-index: 0;
-  background-size: cover; background-position: center 28%;
+  background-size: cover; background-position: center 40%;
   will-change: transform;
+  filter: saturate(0.75) brightness(0.82);
 }
 .hero-overlay {
   position: absolute; inset: 0; z-index: 1;
-  background: linear-gradient(180deg, rgba(20, 15, 10, 0.55) 0%, rgba(20, 15, 10, 0.32) 38%, rgba(20, 15, 10, 0.5) 100%);
+  background:
+    radial-gradient(120% 90% at 50% 8%, rgba(15, 11, 7, 0.72) 0%, rgba(15, 11, 7, 0.4) 32%, rgba(15, 11, 7, 0.28) 55%, rgba(15, 11, 7, 0.55) 100%),
+    rgba(15, 11, 7, 0.38);
 }
 .hero-logo { position: relative; z-index: 2; width: clamp(150px, 20vw, 210px); filter: drop-shadow(0 2px 10px rgba(0,0,0,0.25)); }
 .hero-inner { position: relative; z-index: 2; max-width: 560px; display: flex; flex-direction: column; align-items: center; }
