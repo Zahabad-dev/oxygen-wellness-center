@@ -156,7 +156,7 @@ export default function Catalogo() {
         <div className="section-inner">
           <div className="section-head reveal">
             <span className="eyebrow">Disciplinas</span>
-            <h2>Encuentra tu ritmo</h2>
+            <h2>Encuentra tu movimiento</h2>
             <p>Cada disciplina tiene su propio color en el calendario — elige una para filtrar, o reserva directo.</p>
           </div>
           <div className="discipline-strip reveal reveal-1">
@@ -320,7 +320,7 @@ export default function Catalogo() {
           <div className="section-head center reveal">
             <span className="eyebrow">Membresías</span>
             <h2>Elige tu paquete</h2>
-            <p>Entre más clases, mejor precio por clase — el precio Dúo aplica por persona, viniendo acompañada.</p>
+            <p>Entre más clases, mejor precio por clase — el precio Dúo aplica por persona, si vienes con alguien más.</p>
           </div>
           <div className="pricing-table reveal reveal-1">
             <table>
@@ -345,11 +345,11 @@ export default function Catalogo() {
       <section className="community">
         <span className="blob" aria-hidden="true" />
         <div className="section-inner">
-          <img className="reveal" src="/images/comunidad.jpg" alt="Comunidad de Oxigen Wellness Center practicando juntas" loading="lazy" decoding="async" />
+          <img className="reveal" src="/images/comunidad.jpg" alt="Comunidad de Oxigen Wellness Center entrenando en grupo" loading="lazy" decoding="async" />
           <div className="reveal reveal-1">
             <span className="eyebrow">Comunidad</span>
-            <h2>No entrenas sola.</h2>
-            <blockquote>“Un espacio para cuidarte, a tu ritmo, acompañada.”</blockquote>
+            <h2>Aquí nadie entrena en soledad.</h2>
+            <blockquote>“Un espacio para cuidarte, a tu propio movimiento, en comunidad.”</blockquote>
             <p style={{ color: 'var(--ink-soft)' }}>
               En Oxigen creemos que cada cuerpo tiene su propio proceso. Nuestros coaches te acompañan
               desde tu primera clase — sin presión, sin comparaciones, con técnica y calidez.
