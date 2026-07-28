@@ -117,8 +117,11 @@ staffRouter.post('/clientes/:id/crear-acceso', asyncHandler(async (req, res) => 
   res.json({ ok: true, nombre: rows[0].nombre, whatsapp: rows[0].whatsapp });
 }));
 
-// ---------- Check-in ----------
+// ---------- Check-in (solo recepción/admin — el coach solo puede ver su agenda) ----------
 staffRouter.post('/checkin', async (req, res) => {
+  if (req.staff.rol === 'coach') {
+    return res.status(403).json({ error: 'Tu cuenta no tiene permiso para registrar check-in.' });
+  }
   const { qrToken, claseId, forzar } = req.body || {};
   if (!qrToken || !claseId) {
     return res.status(400).json({ error: 'Falta el QR o la clase.' });

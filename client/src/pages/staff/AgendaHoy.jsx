@@ -27,7 +27,7 @@ const TOUR_STEPS = [
   {
     selector: '[data-tour="agenda-demo-clase"]',
     title: 'Tarjeta de clase',
-    body: 'Cada clase muestra disciplina, hora, coach, salón y cuántos lugares están ocupados. El botón "Check-in" te lleva directo al escáner con esa clase ya seleccionada.',
+    body: 'Cada clase muestra disciplina, hora, coach, salón y cuántos lugares están ocupados. "Compartir reservación" te da un link de esa clase para invitar a tu gente, y "Check-in" te lleva directo al escáner con esa clase ya seleccionada.',
   },
   {
     selector: '[data-tour="agenda-demo-roster"]',
@@ -60,6 +60,25 @@ export default function AgendaHoy() {
     const id = setInterval(cargarSeguimientos, 5 * 60 * 1000);
     return () => clearInterval(id);
   }, [user.rol]);
+
+  async function compartirClase(c) {
+    const url = `${window.location.origin}/clase/${c.id}`;
+    const texto = `¡Únete a mi clase de ${c.disciplina_nombre} hoy a las ${c.hora_inicio?.slice(0, 5)} en Oxigen Wellness Center!`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Oxigen Wellness Center', text: texto, url });
+        return;
+      } catch {
+        return; // el usuario canceló el share
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(`${texto} ${url}`);
+      alert('Link copiado — pégalo donde quieras compartirlo.');
+    } catch {
+      window.prompt('Copia este link para compartir:', url);
+    }
+  }
 
   return (
     <div className="page">
@@ -101,7 +120,10 @@ export default function AgendaHoy() {
                   Coach de prueba · Salón A · 6/10
                 </p>
               </div>
-              <button className="btn btn-primary" type="button" disabled>Check-in</button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn btn-secondary" type="button" disabled>Compartir reservación</button>
+                {user.rol !== 'coach' && <button className="btn btn-primary" type="button" disabled>Check-in</button>}
+              </div>
             </div>
 
             <table className="responsive" style={{ marginTop: 12 }} data-tour="agenda-demo-roster">
@@ -163,7 +185,12 @@ export default function AgendaHoy() {
                 {c.coach_nombre} · {c.salon_nombre} · {c.roster.length}/{c.capacidad_maxima}
               </p>
             </div>
-            <Link className="btn btn-primary" to={`/staff/checkin?clase=${c.id}`}>Check-in</Link>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn btn-secondary" type="button" onClick={() => compartirClase(c)}>Compartir reservación</button>
+              {user.rol !== 'coach' && (
+                <Link className="btn btn-primary" to={`/staff/checkin?clase=${c.id}`}>Check-in</Link>
+              )}
+            </div>
           </div>
 
           {c.roster.length > 0 && (

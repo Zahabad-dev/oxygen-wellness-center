@@ -30,7 +30,7 @@ function Topbar() {
         {isAuthenticated ? (
           <>
             <NavLink to="/staff/agenda">Agenda</NavLink>
-            <NavLink to="/staff/checkin">Check-in</NavLink>
+            {(user.rol === 'administrador' || user.rol === 'recepcion') && <NavLink to="/staff/checkin">Check-in</NavLink>}
             {(user.rol === 'administrador' || user.rol === 'recepcion') && <NavLink to="/staff/clientes">Clientes</NavLink>}
             {user.rol === 'administrador' && <NavLink to="/admin/clases">Admin</NavLink>}
             <span className="pill accent">{user.nombre}</span>
@@ -67,7 +67,7 @@ export default function App() {
                 <Route
                   path="/staff/checkin"
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute roles={['administrador', 'recepcion']}>
                       <StaffCheckin />
                     </ProtectedRoute>
                   }
