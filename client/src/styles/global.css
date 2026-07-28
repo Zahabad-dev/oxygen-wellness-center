@@ -539,3 +539,35 @@ footer.site .footer-links a:hover { color: #fff; }
 .scanner-result-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; margin: 0; }
 .is-success .scanner-result-title { color: var(--success); }
 .scanner-result-text { font-size: 15px; margin: 0; color: var(--ink-soft); }
+
+/* ================= Tutorial guiado (por módulo) ================= */
+
+.tour-btn { font-size: 13px; }
+
+.tour-layer { position: fixed; inset: 0; z-index: 200; pointer-events: none; }
+.tour-dim { position: absolute; inset: 0; background: rgba(20, 15, 10, 0.55); pointer-events: auto; }
+.tour-spotlight {
+  position: absolute; border-radius: 10px;
+  box-shadow: 0 0 0 9999px rgba(20, 15, 10, 0.6);
+  outline: 2px solid var(--gold); outline-offset: 2px;
+  pointer-events: auto; transition: top 0.25s ease, left 0.25s ease, width 0.25s ease, height 0.25s ease;
+}
+.tour-card {
+  position: absolute; width: 300px; max-width: calc(100vw - 24px);
+  background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-lift);
+  padding: 16px 18px; pointer-events: auto; z-index: 1;
+}
+.tour-count {
+  font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--accent-ink); font-weight: 700;
+}
+.tour-card h4 { font-size: 15px; margin: 6px 0 6px; }
+.tour-card p { font-size: 13px; color: var(--ink-soft); margin: 0 0 14px; }
+.tour-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+
+/* Bloques de ejemplo mostrados solo mientras el tutorial está activo */
+.tour-demo-pill {
+  display: inline-block; font-family: var(--font-mono); font-size: 10px; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--accent-ink); background: var(--accent-soft);
+  padding: 2px 8px; border-radius: 100px; margin-bottom: 6px;
+}

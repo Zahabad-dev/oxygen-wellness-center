@@ -1,8 +1,29 @@
 import { useEffect, useState } from 'react';
 import { apiGet, apiPost, apiPut, apiDelete } from '../../lib/apiClient.js';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { useTour } from '../../lib/useTour.js';
+import TourOverlay from '../../components/TourOverlay.jsx';
+import TourButton from '../../components/TourButton.jsx';
 
 const FORM_VACIO = { id: null, nombre: '', whatsapp: '', email: '', notasInternas: '', estado: 'activo' };
+
+const TOUR_STEPS = [
+  {
+    selector: '[data-tour="clientes-buscar"]',
+    title: 'Buscar un cliente',
+    body: 'Escribe parte del nombre o del WhatsApp — se filtra automáticamente mientras escribes.',
+  },
+  {
+    selector: '[data-tour="clientes-columnas"]',
+    title: 'Clases tomadas vs. Reservas',
+    body: '"Clases tomadas" son las que realmente asistió (check-in). "Reservas" cuenta todas sus reservas, aunque no haya venido o siga pendiente.',
+  },
+  {
+    selector: '[data-tour="clientes-demo-acceso"]',
+    title: 'Crear acceso al portal',
+    body: 'Le da al cliente su usuario para "Mi cuenta" (entra con su WhatsApp y la contraseña que definas aquí) — ahí ve su QR, su historial y su recompensa.',
+  },
+];
 
 export default function Clientes() {
   const { user } = useAuth();
@@ -13,6 +34,7 @@ export default function Clientes() {
   const [cargando, setCargando] = useState(true);
   const [mensaje, setMensaje] = useState('');
   const [form, setForm] = useState(null); // null = cerrado
+  const tour = useTour('clientes', TOUR_STEPS);
 
   function cargar() {
     setCargando(true);
@@ -78,11 +100,16 @@ export default function Clientes() {
 
   return (
     <div className="page">
-      <span className="eyebrow">Clientes</span>
-      <h1>Personas registradas</h1>
-      <p style={{ color: 'var(--ink-soft)' }}>Se crean automáticamente en su primera reserva — aquí ves quién se ha registrado, cuántas clases ha tomado, y puedes darle acceso a su propia cuenta.</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 10 }}>
+        <div>
+          <span className="eyebrow">Clientes</span>
+          <h1>Personas registradas</h1>
+          <p style={{ color: 'var(--ink-soft)' }}>Se crean automáticamente en su primera reserva — aquí ves quién se ha registrado, cuántas clases ha tomado, y puedes darle acceso a su propia cuenta.</p>
+        </div>
+        <TourButton tour={tour} />
+      </div>
 
-      <div className="field" style={{ maxWidth: 320 }}>
+      <div className="field" style={{ maxWidth: 320 }} data-tour="clientes-buscar">
         <label htmlFor="buscar">Buscar por nombre o WhatsApp</label>
         <input id="buscar" value={buscar} onChange={(e) => setBuscar(e.target.value)} placeholder="Ej. María, 55…" />
       </div>
@@ -90,6 +117,19 @@ export default function Clientes() {
       {mensaje && <div className="alert success">{mensaje}</div>}
       {error && <div className="alert error">{error}</div>}
       {cargando && <div className="page-loading">Cargando…</div>}
+
+      {tour.active && (
+        <div data-tour="clientes-demo-acceso" className="card" style={{ marginBottom: 18, maxWidth: 480 }}>
+          <span className="tour-demo-pill">Ejemplo</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+            <div>
+              <strong>Cliente de prueba</strong>
+              <p style={{ margin: '2px 0 0', fontSize: 12.5, color: 'var(--ink-soft)' }}>7351234567 · sin acceso todavía</p>
+            </div>
+            <button className="btn btn-secondary" type="button" disabled>Crear acceso</button>
+          </div>
+        </div>
+      )}
 
       {form && (
         <form onSubmit={guardarEdicion} className="card" style={{ marginBottom: 20, maxWidth: 480 }}>
@@ -125,7 +165,7 @@ export default function Clientes() {
       )}
 
       <table className="responsive">
-        <thead>
+        <thead data-tour="clientes-columnas">
           <tr>
             <th>Nombre</th><th>WhatsApp</th><th>Correo</th><th>Clases tomadas</th><th>Reservas</th><th>Registrado</th><th>Cuenta</th><th>Acciones</th>
           </tr>
@@ -156,6 +196,8 @@ export default function Clientes() {
         </tbody>
       </table>
       {!cargando && clientes.length === 0 && <div className="empty-state">No se encontró nadie con ese criterio.</div>}
+
+      <TourOverlay tour={tour} />
     </div>
   );
 }

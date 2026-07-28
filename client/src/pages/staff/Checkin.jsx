@@ -1,9 +1,35 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { apiGet, apiPost } from '../../lib/apiClient.js';
+import { useTour } from '../../lib/useTour.js';
+import TourOverlay from '../../components/TourOverlay.jsx';
+import TourButton from '../../components/TourButton.jsx';
 
 const READER_ID = 'qr-reader';
 const COOLDOWN_MS = 2600;
+
+const TOUR_STEPS = [
+  {
+    selector: '[data-tour="checkin-select"]',
+    title: 'Elige la clase',
+    body: 'Primero selecciona a qué clase de hoy le vas a hacer check-in — el escáner y el código manual registran la asistencia para esa clase.',
+  },
+  {
+    selector: '[data-tour="checkin-scanner"]',
+    title: 'Escáner de cámara',
+    body: 'Apunta la cámara al código QR del cliente (el que le llega al reservar). Se registra solo, sin tocar nada más.',
+  },
+  {
+    selector: '[data-tour="checkin-manual-btn"]',
+    title: 'Código manual de respaldo',
+    body: 'Si la cámara falla o el celular del cliente no abre, puedes escribir o pegar aquí el código de su QR.',
+  },
+  {
+    selector: '[data-tour="checkin-demo-estados"]',
+    title: 'Qué significa cada resultado',
+    body: 'Verde: registrado. Amarillo: llegó fuera del horario permitido de check-in — puedes "Registrar de todas formas" si decides dejarlo pasar. Rojo: hubo un error (QR no reconocido, clase llena, etc.).',
+  },
+];
 
 export default function Checkin() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -19,6 +45,7 @@ export default function Checkin() {
   const bloqueadoRef = useRef(false); // evita reenviar el mismo QR mientras sigue en cuadro
   const resumeTimerRef = useRef(null);
   const scannerStatePausedRef = useRef(3); // Html5QrcodeScannerState.PAUSED (se confirma al cargar la librería)
+  const tour = useTour('checkin', TOUR_STEPS);
 
   useEffect(() => {
     apiGet('/staff/agenda-hoy').then(setClasesHoy).catch(() => {});
@@ -115,10 +142,15 @@ export default function Checkin() {
 
   return (
     <div className="page" style={{ maxWidth: 460, margin: '0 auto' }}>
-      <span className="eyebrow">Recepción</span>
-      <h1>Check-in</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, flexWrap: 'wrap' }}>
+        <div>
+          <span className="eyebrow">Recepción</span>
+          <h1>Check-in</h1>
+        </div>
+        <TourButton tour={tour} />
+      </div>
 
-      <div className="field">
+      <div className="field" data-tour="checkin-select">
         <label htmlFor="clase">Clase</label>
         <select
           id="clase"
@@ -134,7 +166,7 @@ export default function Checkin() {
         </select>
       </div>
 
-      <div className={`scanner-frame ${resultado ? `is-${resultado.tipo}` : ''}`}>
+      <div data-tour="checkin-scanner" className={`scanner-frame ${resultado ? `is-${resultado.tipo}` : ''}`}>
         <div id={READER_ID} className="scanner-video" />
         {!resultado && camaraActiva && <div className="scanner-corners" aria-hidden="true" />}
 
@@ -164,6 +196,7 @@ export default function Checkin() {
       </div>
 
       <button
+        data-tour="checkin-manual-btn"
         className="btn btn-ghost btn-block"
         style={{ marginTop: 10, fontSize: 13 }}
         onClick={() => setManualAbierto((v) => !v)}
@@ -180,6 +213,28 @@ export default function Checkin() {
           <button className="btn btn-primary btn-block" type="submit" disabled={procesando}>Registrar asistencia</button>
         </form>
       )}
+
+      {tour.active && (
+        <div data-tour="checkin-demo-estados" className="card" style={{ marginTop: 14 }}>
+          <span className="tour-demo-pill">Ejemplo</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span className="scanner-result-icon" style={{ position: 'static', width: 32, height: 32, fontSize: 16, background: 'var(--success)' }}>✓</span>
+              <span style={{ fontSize: 13 }}>Registrado correctamente.</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span className="scanner-result-icon" style={{ position: 'static', width: 32, height: 32, fontSize: 16, background: 'var(--warning)' }}>!</span>
+              <span style={{ fontSize: 13 }}>Fuera del horario de check-in — puedes forzarlo.</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span className="scanner-result-icon" style={{ position: 'static', width: 32, height: 32, fontSize: 16, background: 'var(--critical)' }}>✕</span>
+              <span style={{ fontSize: 13 }}>Error (QR no reconocido, clase llena, etc.).</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <TourOverlay tour={tour} />
     </div>
   );
 }
