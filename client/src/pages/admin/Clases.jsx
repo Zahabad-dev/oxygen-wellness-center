@@ -8,6 +8,27 @@ const FORM_VACIO = {
 };
 
 const ESTADO_LABEL = { programada: 'success', cancelada: 'critical', completada: 'accent' };
+const DOW = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const hoyIso = () => new Date().toISOString().slice(0, 10);
+
+// Matriz de celdas (6 semanas x 7 días) para el mes de `mesBase`, incluyendo colas
+// del mes anterior/siguiente para completar semanas — igual que cualquier calendario mensual.
+function construirMes(mesBase) {
+  const primero = new Date(mesBase.getFullYear(), mesBase.getMonth(), 1);
+  const inicio = new Date(primero);
+  inicio.setDate(inicio.getDate() - primero.getDay());
+  const celdas = [];
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(inicio);
+    d.setDate(inicio.getDate() + i);
+    celdas.push({
+      iso: d.toISOString().slice(0, 10),
+      dia: d.getDate(),
+      delMes: d.getMonth() === mesBase.getMonth(),
+    });
+  }
+  return celdas;
+}
 
 export default function Clases() {
   const [clases, setClases] = useState([]);
@@ -17,6 +38,8 @@ export default function Clases() {
   const [form, setForm] = useState(FORM_VACIO);
   const [error, setError] = useState('');
   const [guardando, setGuardando] = useState(false);
+  const [vista, setVista] = useState('lista');
+  const [mesBase, setMesBase] = useState(() => { const d = new Date(); d.setDate(1); return d; });
 
   function cargarClases() {
     apiGet('/admin/clases').then(setClases).catch((err) => setError(err.message));
@@ -78,6 +101,19 @@ export default function Clases() {
       alert(err.message);
     }
   }
+
+  function nuevaEnFecha(iso) {
+    setForm({ ...FORM_VACIO, fecha: iso });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  const clasesPorDia = {};
+  for (const c of clases) {
+    if (!clasesPorDia[c.fecha]) clasesPorDia[c.fecha] = [];
+    clasesPorDia[c.fecha].push(c);
+  }
+  const celdasMes = construirMes(mesBase);
+  const nombreMes = mesBase.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
 
   return (
     <div className="page">
@@ -145,31 +181,74 @@ export default function Clases() {
         </div>
       </form>
 
-      <table className="responsive">
-        <thead>
-          <tr><th>Fecha</th><th>Hora</th><th>Disciplina</th><th>Coach</th><th>Salón</th><th>Cupo</th><th>Estado</th><th>Acciones</th></tr>
-        </thead>
-        <tbody>
-          {clases.map((c) => (
-            <tr key={c.id}>
-              <td data-label="Fecha">{c.fecha}</td>
-              <td data-label="Hora">{c.hora_inicio?.slice(0, 5)}</td>
-              <td data-label="Disciplina"><span className="disc-dot" style={{ background: c.disciplina_color, marginRight: 6 }} />{c.disciplina_nombre}</td>
-              <td data-label="Coach">{c.coach_nombre}</td>
-              <td data-label="Salón">{c.salon_nombre}</td>
-              <td data-label="Cupo">{c.capacidad_maxima}</td>
-              <td data-label="Estado"><span className={`pill ${ESTADO_LABEL[c.estado] || 'accent'}`}>{c.estado}</span></td>
-              <td data-label="Acciones" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => editar(c)}>Editar</button>
-                {c.estado === 'programada' && (
-                  <button className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => cancelar(c)}>Cancelar</button>
-                )}
-                <button className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: 12.5, color: 'var(--critical)' }} onClick={() => borrar(c)}>Borrar</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="chip-row">
+        <span className={`chip ${vista === 'lista' ? 'active' : ''}`} onClick={() => setVista('lista')}>Lista</span>
+        <span className={`chip ${vista === 'calendario' ? 'active' : ''}`} onClick={() => setVista('calendario')}>Calendario</span>
+      </div>
+
+      {vista === 'lista' ? (
+        <table className="responsive">
+          <thead>
+            <tr><th>Fecha</th><th>Hora</th><th>Disciplina</th><th>Coach</th><th>Salón</th><th>Cupo</th><th>Estado</th><th>Acciones</th></tr>
+          </thead>
+          <tbody>
+            {clases.map((c) => (
+              <tr key={c.id}>
+                <td data-label="Fecha">{c.fecha}</td>
+                <td data-label="Hora">{c.hora_inicio?.slice(0, 5)}</td>
+                <td data-label="Disciplina"><span className="disc-dot" style={{ background: c.disciplina_color, marginRight: 6 }} />{c.disciplina_nombre}</td>
+                <td data-label="Coach">{c.coach_nombre}</td>
+                <td data-label="Salón">{c.salon_nombre}</td>
+                <td data-label="Cupo">{c.capacidad_maxima}</td>
+                <td data-label="Estado"><span className={`pill ${ESTADO_LABEL[c.estado] || 'accent'}`}>{c.estado}</span></td>
+                <td data-label="Acciones" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                  <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => editar(c)}>Editar</button>
+                  {c.estado === 'programada' && (
+                    <button className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => cancelar(c)}>Cancelar</button>
+                  )}
+                  <button className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: 12.5, color: 'var(--critical)' }} onClick={() => borrar(c)}>Borrar</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <div className="admin-calendar">
+          <div className="admin-calendar-head">
+            <button type="button" className="btn btn-secondary" style={{ padding: '6px 12px' }} onClick={() => setMesBase((m) => { const d = new Date(m); d.setMonth(d.getMonth() - 1); return d; })}>‹</button>
+            <strong style={{ textTransform: 'capitalize' }}>{nombreMes}</strong>
+            <button type="button" className="btn btn-secondary" style={{ padding: '6px 12px' }} onClick={() => setMesBase((m) => { const d = new Date(m); d.setMonth(d.getMonth() + 1); return d; })}>›</button>
+          </div>
+          <div className="admin-calendar-dow">
+            {DOW.map((d) => <span key={d}>{d}</span>)}
+          </div>
+          <div className="admin-calendar-grid">
+            {celdasMes.map((celda) => (
+              <div
+                key={celda.iso}
+                className={`admin-calendar-cell ${celda.delMes ? '' : 'other-month'} ${celda.iso === hoyIso() ? 'today' : ''}`}
+                onClick={() => nuevaEnFecha(celda.iso)}
+              >
+                <span className="admin-calendar-daynum">{celda.dia}</span>
+                <div className="admin-calendar-chips">
+                  {(clasesPorDia[celda.iso] || []).map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      className="admin-calendar-chip"
+                      style={{ '--chip-color': c.disciplina_color }}
+                      onClick={(e) => { e.stopPropagation(); editar(c); }}
+                      title={`${c.disciplina_nombre} · ${c.coach_nombre}`}
+                    >
+                      {c.hora_inicio?.slice(0, 5)} {c.disciplina_nombre}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
