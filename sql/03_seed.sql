@@ -88,6 +88,6 @@ ON CONFLICT (clave) DO NOTHING;
 -- Usuario admin de desarrollo. Password: "OxygenAdmin2026" — CAMBIAR antes de producción
 -- (genera un hash nuevo con "npm run hash -- \"TuPassword\"" desde server/ y actualiza esta fila).
 INSERT INTO usuarios_internos (nombre, email, password_hash, rol_id)
-SELECT 'Administradora', 'admin@oxigenwc.com', '$2b$10$sL82nyLcrpiXmDHdeiA6/ekdgu4jo4FvE2jX4qq5k8cEutUg/DU2O',
+SELECT 'Administradora', 'admin@oxigenwcenter.com', '$2b$10$sL82nyLcrpiXmDHdeiA6/ekdgu4jo4FvE2jX4qq5k8cEutUg/DU2O',
        (SELECT id FROM roles WHERE nombre = 'administrador')
 ON CONFLICT (email) DO NOTHING;

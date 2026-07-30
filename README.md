@@ -52,7 +52,7 @@ corre en este orden:
 \i sql/03_seed.sql
 ```
 
-El usuario admin de la semilla es `admin@oxigenwc.com` / `OxygenAdmin2026` — **cámbialo** generando un
+El usuario admin de la semilla es `admin@oxigenwcenter.com` / `OxygenAdmin2026` — **cámbialo** generando un
 hash nuevo:
 
 ```bash
