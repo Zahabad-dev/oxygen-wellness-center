@@ -611,6 +611,24 @@ footer.site .footer-links a:hover { color: #fff; }
 .notif-item p { margin: 0 0 4px; color: var(--ink-soft); }
 .notif-time { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-faint); }
 
+/* En pantallas angostas el menú anclado se puede cortar según dónde caiga la campana —
+   se convierte en una hoja que sube desde abajo, siempre a ancho completo, sin ese riesgo. */
+@media (max-width: 640px) {
+  .notif-backdrop { background: rgba(20, 15, 10, 0.45); }
+  .notif-dropdown {
+    position: fixed; top: auto; bottom: 0; left: 0; right: 0; width: 100%; max-width: 100%;
+    max-height: 72vh; border-radius: 16px 16px 0 0; border: none; border-top: 1px solid var(--line);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    animation: notifSheetUp 0.22s ease;
+  }
+  .notif-dropdown::before {
+    content: ''; display: block; width: 36px; height: 4px; background: var(--line); border-radius: 100px;
+    margin: 10px auto 0;
+  }
+}
+@keyframes notifSheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .notif-dropdown { animation: none; } }
+
 .notif-toast {
   position: fixed; top: 16px; right: 16px; z-index: 300; width: 300px; max-width: calc(100vw - 24px);
   background: var(--ink); color: #fdf8f0; border-radius: var(--radius); box-shadow: var(--shadow-lift);
