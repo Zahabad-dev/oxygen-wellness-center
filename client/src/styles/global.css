@@ -253,9 +253,13 @@ thead th { font-family: var(--font-mono); font-size: 10.5px; text-transform: upp
 }
 .hero-bg {
   position: absolute; inset: -10% -6%; z-index: 0;
-  background-size: 165% auto; background-position: center 22%; background-repeat: no-repeat;
+  background-size: cover; background-position: center 20%; background-repeat: no-repeat;
   will-change: transform;
   filter: saturate(0.75) brightness(0.82) blur(3px);
+}
+@media (max-width: 480px) {
+  /* Pantallas muy altas y angostas: acerca más para que ella llene el encuadre. */
+  .hero-bg { background-position: center 12%; }
 }
 .hero-overlay {
   position: absolute; inset: 0; z-index: 1;
