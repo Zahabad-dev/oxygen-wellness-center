@@ -11,6 +11,14 @@ catalogoRouter.get('/disciplinas', asyncHandler(async (_req, res) => {
   res.json(rows);
 }));
 
+catalogoRouter.get('/membresias', asyncHandler(async (_req, res) => {
+  const { rows } = await query(
+    `SELECT id, nombre, clases_incluidas, precio, vigencia_dias
+     FROM membresias WHERE activo = true ORDER BY clases_incluidas`
+  );
+  res.json(rows);
+}));
+
 catalogoRouter.get('/destacados', asyncHandler(async (_req, res) => {
   const { rows } = await query(
     `SELECT id, titulo, subtitulo, fechas, imagen_url, whatsapp, mensaje

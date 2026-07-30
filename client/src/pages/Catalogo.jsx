@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { apiGet } from '../lib/apiClient.js';
 import { disciplineTheme } from '../lib/disciplineTheme.js';
 import { getWeekDays } from '../lib/dates.js';
@@ -337,6 +338,9 @@ export default function Catalogo() {
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className="reveal reveal-1" style={{ textAlign: 'center', marginTop: 20 }}>
+            <Link to="/membresia" className="btn btn-primary">Registrarme y comprar membresía</Link>
           </div>
         </div>
       </section>

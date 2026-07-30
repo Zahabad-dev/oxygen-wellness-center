@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { apiPost } from '../lib/apiClient.js';
 import PasswordInput from '../components/PasswordInput.jsx';
+import { waLink } from '../lib/whatsapp.js';
+
+const WHATSAPP_ESTUDIO = '5217751103675';
 
 export default function ClientLogin() {
   const navigate = useNavigate();
@@ -28,7 +31,10 @@ export default function ClientLogin() {
     <div className="page" style={{ maxWidth: 380, margin: '0 auto' }}>
       <span className="eyebrow">Mi cuenta</span>
       <h1>Entra a tu cuenta</h1>
-      <p style={{ color: 'var(--ink-soft)' }}>Si todavía no tienes acceso, pídelo la próxima vez que vengas al centro.</p>
+      <p style={{ color: 'var(--ink-soft)' }}>
+        Si todavía no tienes acceso, pídelo la próxima vez que vengas al centro, o{' '}
+        <Link to="/membresia">regístrate y compra tu membresía</Link> aquí mismo.
+      </p>
       <form onSubmit={onSubmit} className="card">
         <div className="field">
           <label htmlFor="whatsapp">WhatsApp</label>
@@ -43,6 +49,16 @@ export default function ClientLogin() {
           {enviando ? 'Entrando…' : 'Entrar'}
         </button>
       </form>
+      <p style={{ marginTop: 12, textAlign: 'center' }}>
+        <a
+          href={waLink(WHATSAPP_ESTUDIO, 'Hola, olvidé la contraseña de mi cuenta en Oxigen Wellness Center. ¿Me ayudan a restablecerla?')}
+          target="_blank"
+          rel="noreferrer"
+          style={{ fontSize: 13 }}
+        >
+          Olvidé mi contraseña
+        </a>
+      </p>
       <p style={{ marginTop: 16 }}><Link to="/">Volver al catálogo</Link></p>
     </div>
   );

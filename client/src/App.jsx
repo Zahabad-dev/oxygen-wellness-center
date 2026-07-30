@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
+import NotificationBell from './components/NotificationBell.jsx';
 
 const Catalogo = lazy(() => import('./pages/Catalogo.jsx'));
 const DetalleClase = lazy(() => import('./pages/DetalleClase.jsx'));
@@ -18,6 +19,7 @@ const AdminDestacados = lazy(() => import('./pages/admin/Destacados.jsx'));
 const StaffClientes = lazy(() => import('./pages/staff/Clientes.jsx'));
 const ClientLogin = lazy(() => import('./pages/ClientLogin.jsx'));
 const ClientPortal = lazy(() => import('./pages/ClientPortal.jsx'));
+const Membresia = lazy(() => import('./pages/Membresia.jsx'));
 
 function Topbar() {
   const { isAuthenticated, user, signOut } = useAuth();
@@ -33,6 +35,7 @@ function Topbar() {
             {(user.rol === 'administrador' || user.rol === 'recepcion') && <NavLink to="/staff/checkin">Check-in</NavLink>}
             {(user.rol === 'administrador' || user.rol === 'recepcion') && <NavLink to="/staff/clientes">Clientes</NavLink>}
             {user.rol === 'administrador' && <NavLink to="/admin/clases">Admin</NavLink>}
+            <NotificationBell baseEndpoint="/staff" />
             <span className="pill accent">{user.nombre}</span>
             <a href="#" onClick={(e) => { e.preventDefault(); signOut(); }}>Salir</a>
           </>
@@ -61,6 +64,7 @@ export default function App() {
                 <Route path="/reserva-confirmada/:qrToken" element={<ReservaConfirmada />} />
                 <Route path="/mi-qr/:qrToken" element={<MiQr />} />
                 <Route path="/mi-cuenta/login" element={<ClientLogin />} />
+                <Route path="/membresia" element={<Membresia />} />
                 <Route path="/mi-cuenta" element={<ClientPortal />} />
 
                 <Route path="/staff/login" element={<StaffLogin />} />

@@ -5,6 +5,92 @@ import { asyncHandler } from '../asyncHandler.js';
 
 export const staffRouter = Router();
 
+// ---------- Notificaciones (buzón propio de cada cuenta de staff) ----------
+staffRouter.get('/notificaciones', asyncHandler(async (req, res) => {
+  const { rows } = await query(
+    `SELECT id, tipo, titulo, mensaje, leida, created_at FROM notificaciones
+     WHERE destinatario_tipo = 'staff' AND destinatario_id = $1
+     ORDER BY created_at DESC LIMIT 30`,
+    [req.staff.id]
+  );
+  res.json(rows);
+}));
+
+staffRouter.post('/notificaciones/:id/leida', asyncHandler(async (req, res) => {
+  await query(
+    `UPDATE notificaciones SET leida = true WHERE id = $1 AND destinatario_tipo = 'staff' AND destinatario_id = $2`,
+    [req.params.id, req.staff.id]
+  );
+  res.json({ ok: true });
+}));
+
+// ---------- Membresías pendientes de confirmar pago (recepción/admin) ----------
+staffRouter.get('/pagos-pendientes', asyncHandler(async (req, res) => {
+  if (!['administrador', 'recepcion'].includes(req.staff.rol)) {
+    return res.status(403).json({ error: 'No tienes permiso para ver esto.' });
+  }
+  const { rows } = await query(
+    `SELECT p.id AS pago_id, p.monto, p.fecha, p.referencia_id AS suscripcion_id,
+            cl.id AS cliente_id, cl.nombre AS cliente_nombre, cl.whatsapp,
+            m.nombre AS membresia_nombre, m.clases_incluidas
+     FROM pagos p
+     JOIN suscripciones s ON s.id = p.referencia_id AND p.referencia_tipo = 'membresia'
+     JOIN clientes cl ON cl.id = s.cliente_id
+     JOIN membresias m ON m.id = s.membresia_id
+     WHERE p.estado = 'pendiente'
+     ORDER BY p.fecha`
+  );
+  res.json(rows);
+}));
+
+staffRouter.post('/pagos/:id/confirmar', asyncHandler(async (req, res) => {
+  if (!['administrador', 'recepcion'].includes(req.staff.rol)) {
+    return res.status(403).json({ error: 'No tienes permiso para esta acción.' });
+  }
+
+  await withTransaction(async (client) => {
+    const { rows: pagoRows } = await client.query(
+      `SELECT p.id, p.estado, p.referencia_id AS suscripcion_id
+       FROM pagos p WHERE p.id = $1 AND p.referencia_tipo = 'membresia' FOR UPDATE`,
+      [req.params.id]
+    );
+    const pago = pagoRows[0];
+    if (!pago) {
+      const err = new Error('Pago no encontrado.');
+      err.status = 404;
+      throw err;
+    }
+    if (pago.estado === 'pagado') return;
+
+    const { rows: suscripcionRows } = await client.query(
+      `SELECT s.cliente_id, s.fecha_fin, m.clases_incluidas
+       FROM suscripciones s JOIN membresias m ON m.id = s.membresia_id
+       WHERE s.id = $1`,
+      [pago.suscripcion_id]
+    );
+    const suscripcion = suscripcionRows[0];
+
+    // Ya se otorgó 1 clase de cortesía al registrarse — aquí se libera el resto.
+    const restante = Math.max(0, suscripcion.clases_incluidas - 1);
+    if (restante > 0) {
+      await client.query(
+        `INSERT INTO movimientos_saldo (cliente_id, tipo, cantidad, referencia_tipo, referencia_id, fecha_expiracion)
+         VALUES ($1, 'compra', $2, 'paquete', $3, $4)`,
+        [suscripcion.cliente_id, restante, pago.suscripcion_id, suscripcion.fecha_fin]
+      );
+    }
+
+    await client.query(`UPDATE pagos SET estado = 'pagado' WHERE id = $1`, [pago.id]);
+    await client.query(
+      `INSERT INTO historial (entidad, entidad_id, accion, actor_tipo, actor_id, detalle)
+       VALUES ('pago', $1, 'pago_confirmado', 'staff', $2, $3::jsonb)`,
+      [pago.id, req.staff.id, JSON.stringify({ suscripcionId: pago.suscripcion_id })]
+    );
+  });
+
+  res.json({ ok: true });
+}));
+
 // ---------- Agenda de hoy (recepción ve todo; coach solo lo suyo) ----------
 staffRouter.get('/agenda-hoy', asyncHandler(async (req, res) => {
   const soloCoach = req.staff.rol === 'coach';

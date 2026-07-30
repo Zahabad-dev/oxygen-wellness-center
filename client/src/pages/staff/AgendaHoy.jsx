@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { apiGet } from '../../lib/apiClient.js';
+import { apiGet, apiPost } from '../../lib/apiClient.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { waLink, mensajeSeguimiento } from '../../lib/whatsapp.js';
 import { useTour } from '../../lib/useTour.js';
 import TourOverlay from '../../components/TourOverlay.jsx';
 import TourButton from '../../components/TourButton.jsx';
+
+const money = (n) => `$${Number(n).toLocaleString('es-MX')}`;
 
 const ESTADO_LABEL = {
   confirmada: { text: 'confirmada', className: 'success' },
@@ -40,9 +42,20 @@ export default function AgendaHoy() {
   const { user } = useAuth();
   const [clases, setClases] = useState([]);
   const [seguimientos, setSeguimientos] = useState([]);
+  const [pagosPendientes, setPagosPendientes] = useState([]);
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(true);
   const tour = useTour('agenda', TOUR_STEPS);
+
+  function cargarPagosPendientes() {
+    apiGet('/staff/pagos-pendientes').then(setPagosPendientes).catch(() => {});
+  }
+
+  async function confirmarPago(p) {
+    if (!confirm(`¿Confirmar que ${p.cliente_nombre} ya pagó su membresía "${p.membresia_nombre}"?`)) return;
+    await apiPost(`/staff/pagos/${p.pago_id}/confirmar`, {});
+    cargarPagosPendientes();
+  }
 
   useEffect(() => {
     apiGet('/staff/agenda-hoy')
@@ -57,8 +70,10 @@ export default function AgendaHoy() {
       apiGet('/staff/seguimientos').then(setSeguimientos).catch(() => {});
     }
     cargarSeguimientos();
-    const id = setInterval(cargarSeguimientos, 5 * 60 * 1000);
+    cargarPagosPendientes();
+    const id = setInterval(() => { cargarSeguimientos(); cargarPagosPendientes(); }, 5 * 60 * 1000);
     return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user.rol]);
 
   async function compartirClase(c) {
@@ -162,6 +177,22 @@ export default function AgendaHoy() {
                 >
                   Enviar seguimiento por WhatsApp
                 </a>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {pagosPendientes.length > 0 && (
+        <div className="alert warning" style={{ marginBottom: 18 }}>
+          <strong>Membresías por confirmar pago:</strong> {pagosPendientes.length === 1 ? '1 clienta' : `${pagosPendientes.length} clientas`} se registró en línea y solo tiene 1 clase de cortesía hasta que confirmes que ya pagó.
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
+            {pagosPendientes.map((p) => (
+              <div key={p.pago_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', padding: '8px 12px' }}>
+                <span>
+                  <strong>{p.cliente_nombre}</strong> · {p.membresia_nombre} · {money(p.monto)} · {p.whatsapp}
+                </span>
+                <button className="btn btn-primary" type="button" onClick={() => confirmarPago(p)}>Marcar como pagado</button>
               </div>
             ))}
           </div>

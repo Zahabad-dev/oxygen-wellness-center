@@ -67,6 +67,16 @@ SELECT d.id, c.id, s.id, CURRENT_DATE, '09:00', 50, 10, 'Todos los niveles', 'Cl
 FROM disciplinas d, coaches c, salones s
 WHERE d.nombre = 'Yoga' AND c.nombre = 'Coach Demo' AND s.nombre = 'Salón A';
 
+-- Membresías reales del estudio (paquetes de clases, precio individual)
+INSERT INTO membresias (nombre, tipo, vigencia_dias, clases_incluidas, precio) VALUES
+  ('1 clase', 'por_clases', 90, 1, 85),
+  ('4 clases', 'por_clases', 90, 4, 320),
+  ('8 clases', 'por_clases', 90, 8, 640),
+  ('12 clases', 'por_clases', 90, 12, 840),
+  ('16 clases', 'por_clases', 90, 16, 1040),
+  ('20 clases', 'por_clases', 90, 20, 1240)
+ON CONFLICT DO NOTHING;
+
 -- Configuración general — reglas de negocio con valores por defecto (editables después desde Admin)
 INSERT INTO configuracion_general (clave, valor, descripcion) VALUES
   ('ventana_checkin_minutos_antes', '15', 'Minutos antes de la hora de inicio en que se permite hacer check-in.'),

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { apiGet, apiPost } from '../lib/apiClient.js';
 import ClienteQrCard from '../components/ClienteQrCard.jsx';
+import NotificationBell from '../components/NotificationBell.jsx';
 
 export default function ClientPortal() {
   const navigate = useNavigate();
@@ -38,12 +39,32 @@ export default function ClientPortal() {
   if (error) return <div className="page"><div className="alert error">{error}</div></div>;
   if (!datos) return <div className="page-loading">Cargando…</div>;
 
-  const { recompensa } = datos;
+  const { recompensa, membresia } = datos;
 
   return (
     <div className="page" style={{ maxWidth: 460, margin: '0 auto', textAlign: 'center' }}>
-      <span className="eyebrow">Mi cuenta</span>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+        <span className="eyebrow">Mi cuenta</span>
+        <NotificationBell baseEndpoint="/portal" />
+      </div>
       <ClienteQrCard qrToken={datos.qrToken} heading="Tu identificación en Oxigen" />
+
+      {membresia && (membresia.saldo > 0 || membresia.pagoPendiente) && (
+        <div className="card" style={{ marginTop: 16, textAlign: 'left' }}>
+          <h3 style={{ fontSize: 15, marginBottom: 4 }}>Mi membresía</h3>
+          <p style={{ fontSize: 13, color: 'var(--ink-soft)', margin: '0 0 4px' }}>
+            {membresia.saldo > 0
+              ? `Te ${membresia.saldo === 1 ? 'queda 1 clase' : `quedan ${membresia.saldo} clases`}.`
+              : 'Ya no te quedan clases en tu membresía.'}
+          </p>
+          {membresia.pagoPendiente && (
+            <div className="alert warning" style={{ fontSize: 12.5, margin: 0 }}>
+              Tu membresía "{membresia.pagoPendiente.membresia_nombre}" está pendiente de confirmar en recepción —
+              mientras tanto solo cuentas con tu clase de cortesía.
+            </div>
+          )}
+        </div>
+      )}
 
       {recompensa && (
         <div className="card" style={{ marginTop: 16, textAlign: 'left' }}>
