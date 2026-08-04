@@ -56,6 +56,7 @@ export default function Checkin() {
   };
 
   const reanudarEscaneo = useCallback(() => {
+    clearTimeout(resumeTimerRef.current);
     setResultado(null);
     bloqueadoRef.current = false;
     try {
@@ -69,6 +70,7 @@ export default function Checkin() {
     async (qrToken, forzar = false) => {
       if (bloqueadoRef.current) return;
       bloqueadoRef.current = true;
+      clearTimeout(resumeTimerRef.current);
 
       if (scannerRef.current?.isScanning) {
         try { scannerRef.current.pause(true); } catch { /* ignore */ }
@@ -91,6 +93,8 @@ export default function Checkin() {
         vibrar([40, 60, 40]);
         if (err.advertencia === 'fuera_de_ventana' && !forzar) {
           setResultado({ tipo: 'warning', texto: err.message, qrToken });
+          // Respaldo: si nadie decide en 20s, no se queda trabado — vuelve a escanear solo.
+          resumeTimerRef.current = setTimeout(reanudarEscaneo, 20000);
         } else {
           setResultado({ tipo: 'error', texto: err.message });
           resumeTimerRef.current = setTimeout(reanudarEscaneo, COOLDOWN_MS);
@@ -182,11 +186,11 @@ export default function Checkin() {
             {resultado.titulo && <p className="scanner-result-title">{resultado.titulo}</p>}
             <p className="scanner-result-text">{resultado.texto}</p>
             {resultado.tipo === 'warning' && resultado.qrToken ? (
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn btn-secondary" onClick={() => registrarCheckin(resultado.qrToken, true)}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+                <button className="btn btn-primary btn-block" onClick={() => registrarCheckin(resultado.qrToken, true)}>
                   Registrar de todas formas
                 </button>
-                <button className="btn btn-ghost" onClick={reanudarEscaneo}>Cancelar</button>
+                <button className="btn btn-secondary btn-block" onClick={reanudarEscaneo}>Cancelar y escanear otro</button>
               </div>
             ) : (
               <button className="btn btn-secondary" onClick={reanudarEscaneo}>Escanear siguiente</button>
