@@ -22,10 +22,10 @@ const money = (n) => `$${n.toLocaleString('es-MX')}`;
 // Horario semanal recurrente real del estudio (coincide con las clases generadas en agenda).
 const HORARIO_SEMANA = [
   { dia: 'Lunes', clases: [['07:00', 'Funcional'], ['08:00', 'Sculpt'], ['18:00', 'Sculpt'], ['19:00', 'Pilates'], ['20:00', 'Baile']] },
-  { dia: 'Martes', clases: [['08:00', 'Baile'], ['19:00', 'Funcional']] },
+  { dia: 'Martes', clases: [['07:00', 'Funcional'], ['19:00', 'Funcional']] },
   { dia: 'Miércoles', clases: [['07:00', 'Funcional'], ['08:00', 'Sculpt'], ['18:00', 'Pilates'], ['19:00', 'Baile']] },
-  { dia: 'Jueves', clases: [['08:00', 'Baile'], ['19:00', 'Funcional']] },
-  { dia: 'Viernes', clases: [['07:00', 'Funcional'], ['08:00', 'Pilates'], ['19:00', 'Baile']] },
+  { dia: 'Jueves', clases: [['08:00', 'Baile'], ['20:00', 'Baile']] },
+  { dia: 'Viernes', clases: [['08:00', 'Pilates'], ['19:00', 'Baile']] },
   { dia: 'Sábado', clases: [['08:00', 'Funcional']] },
 ];
 
