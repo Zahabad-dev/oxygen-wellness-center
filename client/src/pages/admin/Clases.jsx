@@ -240,16 +240,14 @@ export default function Clases() {
                 <span className="admin-calendar-daynum">{celda.dia}</span>
                 <div className="admin-calendar-chips">
                   {(clasesPorDia[celda.iso] || []).map((c) => (
-                    <button
+                    <span
                       key={c.id}
-                      type="button"
                       className="admin-calendar-chip"
                       style={{ '--chip-color': c.disciplina_color }}
-                      onClick={(e) => { e.stopPropagation(); editar(c); }}
                       title={`${c.disciplina_nombre} · ${c.coach_nombre}`}
                     >
                       {c.hora_inicio?.slice(0, 5)} {c.disciplina_nombre}
-                    </button>
+                    </span>
                   ))}
                 </div>
               </div>
