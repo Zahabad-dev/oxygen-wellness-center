@@ -66,6 +66,7 @@ export default function Clases() {
       nivel: c.nivel || '',
       descripcion: c.descripcion || '',
     });
+    setDiaSeleccionado(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -106,6 +107,7 @@ export default function Clases() {
 
   function nuevaEnFecha(iso) {
     setForm({ ...FORM_VACIO, fecha: iso });
+    setDiaSeleccionado(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -255,36 +257,44 @@ export default function Clases() {
           </div>
 
           {diaSeleccionado && (
-            <div className="card" style={{ marginTop: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <h3 style={{ margin: 0 }}>Clases del {diaSeleccionado}</h3>
-                <button type="button" className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => setDiaSeleccionado(null)}>✕</button>
+            <div className="modal-backdrop" onClick={() => setDiaSeleccionado(null)}>
+              <div className="modal-panel" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 460 }}>
+                <button className="modal-close" onClick={() => setDiaSeleccionado(null)} aria-label="Cerrar">✕</button>
+                <h3 style={{ marginTop: 0 }}>Clases del {diaSeleccionado}</h3>
+
+                {(clasesPorDia[diaSeleccionado] || []).length === 0 && (
+                  <p style={{ color: 'var(--ink-soft)', fontSize: 13.5 }}>Sin clases programadas este día.</p>
+                )}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+                  {(clasesPorDia[diaSeleccionado] || []).map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => editar(c)}
+                      style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8,
+                        border: '1px solid var(--line)', borderLeft: `4px solid ${c.disciplina_color || 'var(--accent)'}`,
+                        borderRadius: 'var(--radius-sm)', padding: '10px 12px', background: 'var(--surface)',
+                        textAlign: 'left', cursor: 'pointer', width: '100%',
+                      }}
+                    >
+                      <span>
+                        <strong>{c.hora_inicio?.slice(0, 5)}</strong> {c.disciplina_nombre} · {c.coach_nombre}
+                        {' '}<span className={`pill ${ESTADO_LABEL[c.estado] || 'accent'}`} style={{ marginLeft: 4 }}>{c.estado}</span>
+                      </span>
+                      <div style={{ display: 'flex', gap: 6 }} onClick={(e) => e.stopPropagation()}>
+                        {c.estado === 'programada' && (
+                          <button type="button" className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => cancelar(c)}>Cancelar</button>
+                        )}
+                        <button type="button" className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: 12.5, color: 'var(--critical)' }} onClick={() => borrar(c)}>Borrar</button>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                <button type="button" className="btn btn-primary btn-block" onClick={() => nuevaEnFecha(diaSeleccionado)}>+ Nueva clase este día</button>
               </div>
-
-              {(clasesPorDia[diaSeleccionado] || []).length === 0 && (
-                <p style={{ color: 'var(--ink-soft)', fontSize: 13.5, margin: '0 0 10px' }}>Sin clases programadas este día.</p>
-              )}
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
-                {(clasesPorDia[diaSeleccionado] || []).map((c) => (
-                  <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', padding: '8px 12px' }}>
-                    <span>
-                      <span className="disc-dot" style={{ background: c.disciplina_color, marginRight: 6 }} />
-                      <strong>{c.hora_inicio?.slice(0, 5)}</strong> {c.disciplina_nombre} · {c.coach_nombre}
-                      {' '}<span className={`pill ${ESTADO_LABEL[c.estado] || 'accent'}`} style={{ marginLeft: 4 }}>{c.estado}</span>
-                    </span>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => editar(c)}>Editar</button>
-                      {c.estado === 'programada' && (
-                        <button className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => cancelar(c)}>Cancelar</button>
-                      )}
-                      <button className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: 12.5, color: 'var(--critical)' }} onClick={() => borrar(c)}>Borrar</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <button type="button" className="btn btn-primary" onClick={() => nuevaEnFecha(diaSeleccionado)}>+ Nueva clase este día</button>
             </div>
           )}
         </div>
