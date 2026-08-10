@@ -246,7 +246,8 @@ export default function Clases() {
                       style={{ '--chip-color': c.disciplina_color }}
                       title={`${c.disciplina_nombre} · ${c.coach_nombre}`}
                     >
-                      {c.hora_inicio?.slice(0, 5)} {c.disciplina_nombre}
+                      <span className="admin-calendar-chip-hora">{c.hora_inicio?.slice(0, 5)}</span>
+                      <span className="admin-calendar-chip-disc"> {c.disciplina_nombre}</span>
                     </span>
                   ))}
                 </div>
