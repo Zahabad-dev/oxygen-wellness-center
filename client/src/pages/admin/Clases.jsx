@@ -40,6 +40,7 @@ export default function Clases() {
   const [guardando, setGuardando] = useState(false);
   const [vista, setVista] = useState('lista');
   const [mesBase, setMesBase] = useState(() => { const d = new Date(); d.setDate(1); return d; });
+  const [diaSeleccionado, setDiaSeleccionado] = useState(null);
 
   function cargarClases() {
     apiGet('/admin/clases').then(setClases).catch((err) => setError(err.message));
@@ -65,6 +66,7 @@ export default function Clases() {
       nivel: c.nivel || '',
       descripcion: c.descripcion || '',
     });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function onSubmit(e) {
@@ -105,6 +107,10 @@ export default function Clases() {
   function nuevaEnFecha(iso) {
     setForm({ ...FORM_VACIO, fecha: iso });
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function abrirDia(iso) {
+    setDiaSeleccionado((actual) => (actual === iso ? null : iso));
   }
 
   const clasesPorDia = {};
@@ -226,8 +232,8 @@ export default function Clases() {
             {celdasMes.map((celda) => (
               <div
                 key={celda.iso}
-                className={`admin-calendar-cell ${celda.delMes ? '' : 'other-month'} ${celda.iso === hoyIso() ? 'today' : ''}`}
-                onClick={() => nuevaEnFecha(celda.iso)}
+                className={`admin-calendar-cell ${celda.delMes ? '' : 'other-month'} ${celda.iso === hoyIso() ? 'today' : ''} ${celda.iso === diaSeleccionado ? 'selected' : ''}`}
+                onClick={() => abrirDia(celda.iso)}
               >
                 <span className="admin-calendar-daynum">{celda.dia}</span>
                 <div className="admin-calendar-chips">
@@ -247,6 +253,40 @@ export default function Clases() {
               </div>
             ))}
           </div>
+
+          {diaSeleccionado && (
+            <div className="card" style={{ marginTop: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <h3 style={{ margin: 0 }}>Clases del {diaSeleccionado}</h3>
+                <button type="button" className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => setDiaSeleccionado(null)}>✕</button>
+              </div>
+
+              {(clasesPorDia[diaSeleccionado] || []).length === 0 && (
+                <p style={{ color: 'var(--ink-soft)', fontSize: 13.5, margin: '0 0 10px' }}>Sin clases programadas este día.</p>
+              )}
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+                {(clasesPorDia[diaSeleccionado] || []).map((c) => (
+                  <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', padding: '8px 12px' }}>
+                    <span>
+                      <span className="disc-dot" style={{ background: c.disciplina_color, marginRight: 6 }} />
+                      <strong>{c.hora_inicio?.slice(0, 5)}</strong> {c.disciplina_nombre} · {c.coach_nombre}
+                      {' '}<span className={`pill ${ESTADO_LABEL[c.estado] || 'accent'}`} style={{ marginLeft: 4 }}>{c.estado}</span>
+                    </span>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => editar(c)}>Editar</button>
+                      {c.estado === 'programada' && (
+                        <button className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => cancelar(c)}>Cancelar</button>
+                      )}
+                      <button className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: 12.5, color: 'var(--critical)' }} onClick={() => borrar(c)}>Borrar</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button type="button" className="btn btn-primary" onClick={() => nuevaEnFecha(diaSeleccionado)}>+ Nueva clase este día</button>
+            </div>
+          )}
         </div>
       )}
     </div>
