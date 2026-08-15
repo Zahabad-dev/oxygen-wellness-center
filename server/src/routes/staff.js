@@ -242,7 +242,10 @@ staffRouter.post('/checkin', async (req, res) => {
          WHERE clave IN ('ventana_checkin_minutos_antes','ventana_checkin_minutos_despues')`
       );
       const cfg = Object.fromEntries(cfgRows.map((r) => [r.clave, Number(r.valor)]));
-      const inicio = new Date(`${clase.fecha}T${clase.hora_inicio}`);
+      // Offset fijo -06:00: Mexico ya no usa horario de verano. Sin esto, Node interpreta
+      // la hora de la clase como si fuera UTC (el contenedor corre en UTC), desfasando la
+      // ventana de check-in 6 horas y disparando "fuera de horario" de forma incorrecta.
+      const inicio = new Date(`${clase.fecha}T${clase.hora_inicio}-06:00`);
       const ahora = new Date();
       const minutosDesdeInicio = (ahora - inicio) / 60000;
       const dentroVentana =

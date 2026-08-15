@@ -93,6 +93,8 @@ export default function Checkin() {
         vibrar([40, 60, 40]);
         if (err.advertencia === 'fuera_de_ventana' && !forzar) {
           setResultado({ tipo: 'warning', texto: err.message, qrToken });
+          // Libera el candado: si no, "Registrar de todas formas" queda mudo hasta el timeout.
+          bloqueadoRef.current = false;
           // Respaldo: si nadie decide en 20s, no se queda trabado — vuelve a escanear solo.
           resumeTimerRef.current = setTimeout(reanudarEscaneo, 20000);
         } else {
