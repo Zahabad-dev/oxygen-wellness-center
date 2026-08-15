@@ -19,6 +19,15 @@ pool.on('error', (err) => {
   console.error('[db] Error inesperado en el pool de Postgres:', err.message);
 });
 
+// El servidor de Postgres corre en UTC. Sin esto, CURRENT_DATE/NOW() se adelantan un dia
+// entre las 18:00 y las 23:59 hora Ciudad de Mexico, ocultando clases de "hoy" en el
+// catalogo publico (que filtra por fecha >= CURRENT_DATE) aunque el staff si las viera.
+pool.on('connect', (client) => {
+  client.query("SET TIME ZONE 'America/Mexico_City'").catch((err) => {
+    console.error('[db] No se pudo fijar TIME ZONE en la conexion:', err.message);
+  });
+});
+
 export function query(text, params) {
   return pool.query(text, params);
 }
