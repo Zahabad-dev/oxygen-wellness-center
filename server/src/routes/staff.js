@@ -235,7 +235,7 @@ staffRouter.post('/checkin', async (req, res) => {
   try {
     const resultado = await withTransaction(async (client) => {
       const { rows: clienteRows } = await client.query(
-        `SELECT id, nombre FROM clientes WHERE qr_token = $1`,
+        `SELECT id, nombre, (password_hash IS NOT NULL) AS tiene_acceso FROM clientes WHERE qr_token = $1`,
         [qrToken]
       );
       const cliente = clienteRows[0];
@@ -328,10 +328,20 @@ staffRouter.post('/checkin', async (req, res) => {
         [reserva.id, req.staff.id, JSON.stringify({ claseId, clienteId: cliente.id, ...validaciones })]
       );
 
-      return { nombre: cliente.nombre };
+      const { rows: visitasRows } = await client.query(
+        `SELECT count(*)::int AS n FROM checkins WHERE cliente_id = $1`,
+        [cliente.id]
+      );
+
+      // Gancho para recepción: en la 2a visita, si todavía no tiene cuenta del portal,
+      // es el mejor momento para pedirle que se registre y no perder sus recompensas
+      // por si se les pasó activarla en la primera visita.
+      const avisoRegistro = visitasRows[0].n === 2 && !cliente.tiene_acceso;
+
+      return { nombre: cliente.nombre, avisoRegistro };
     });
 
-    res.json({ ok: true, nombre: resultado.nombre });
+    res.json({ ok: true, nombre: resultado.nombre, avisoRegistro: resultado.avisoRegistro });
   } catch (err) {
     const status = err.status || 500;
     if (status >= 500) console.error('[staff/checkin] Error inesperado:', err);

@@ -86,9 +86,10 @@ export default function Checkin() {
       try {
         const data = await apiPost('/staff/checkin', { qrToken, claseId: Number(claseId), forzar });
         vibrar(60);
-        setResultado({ tipo: 'success', titulo: '¡Completado!', texto: data.nombre });
+        setResultado({ tipo: 'success', titulo: '¡Completado!', texto: data.nombre, avisoRegistro: data.avisoRegistro });
         setManualToken('');
-        resumeTimerRef.current = setTimeout(reanudarEscaneo, COOLDOWN_MS);
+        // Con el aviso de 2a visita se deja más tiempo en pantalla para que recepción lo lea y actúe.
+        resumeTimerRef.current = setTimeout(reanudarEscaneo, data.avisoRegistro ? 8000 : COOLDOWN_MS);
       } catch (err) {
         vibrar([40, 60, 40]);
         if (err.advertencia === 'fuera_de_ventana' && !forzar) {
@@ -187,6 +188,12 @@ export default function Checkin() {
             </span>
             {resultado.titulo && <p className="scanner-result-title">{resultado.titulo}</p>}
             <p className="scanner-result-text">{resultado.texto}</p>
+            {resultado.avisoRegistro && (
+              <div className="alert warning" style={{ textAlign: 'left', marginTop: 4 }}>
+                📋 Es su <strong>2ª visita</strong> y todavía no tiene cuenta del portal — pídele que pase a
+                recepción a registrarse para no perder sus recompensas.
+              </div>
+            )}
             {resultado.tipo === 'warning' && resultado.qrToken ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
                 <button className="btn btn-primary btn-block" onClick={() => registrarCheckin(resultado.qrToken, true)}>
