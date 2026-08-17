@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import jwt from 'jsonwebtoken';
+import config from '../config.js';
 import { withTransaction } from '../db.js';
 import { crearNotificacion } from '../notificaciones.js';
 
@@ -10,11 +12,26 @@ const whatsappRegex = /^[0-9+()\s-]{7,20}$/;
 reservasRouter.post('/', async (req, res) => {
   const { claseId, nombre, whatsapp, email } = req.body || {};
 
-  if (!claseId || !nombre?.trim() || !whatsapp?.trim()) {
-    return res.status(400).json({ error: 'Faltan datos: nombre, whatsapp y clase son obligatorios.' });
+  // Si ya tiene sesión iniciada en el portal (cookie oxigen_client), la reserva se hace
+  // con esa identidad — sin esto, un cliente logueado siempre volvía a ver el formulario
+  // de nombre/whatsapp, y si lo llenaba distinto a como se registró (typo, apodo, con/sin
+  // +52) se le creaba sin querer un cliente duplicado en vez de usar el que ya tenía.
+  let sesion = null;
+  const token = req.cookies?.[config.clientCookieName];
+  if (token) {
+    try { sesion = jwt.verify(token, config.jwtSecret); } catch { /* sesión inválida o vencida: se trata como reserva anónima */ }
   }
-  if (!whatsappRegex.test(whatsapp.trim())) {
-    return res.status(400).json({ error: 'El número de WhatsApp no parece válido.' });
+
+  if (!claseId) {
+    return res.status(400).json({ error: 'Falta la clase.' });
+  }
+  if (!sesion) {
+    if (!nombre?.trim() || !whatsapp?.trim()) {
+      return res.status(400).json({ error: 'Faltan datos: nombre, whatsapp y clase son obligatorios.' });
+    }
+    if (!whatsappRegex.test(whatsapp.trim())) {
+      return res.status(400).json({ error: 'El número de WhatsApp no parece válido.' });
+    }
   }
 
   try {
@@ -40,20 +57,31 @@ reservasRouter.post('/', async (req, res) => {
         throw err;
       }
 
-      // La identidad del cliente es whatsapp + nombre, no solo el whatsapp: un mismo teléfono
-      // puede pertenecer a varias personas de una misma familia (ej. mamá reservando para su hija).
-      let { rows: clienteRows } = await client.query(
-        `SELECT id, nombre, qr_token FROM clientes WHERE whatsapp = $1 AND lower(nombre) = lower($2)`,
-        [whatsapp.trim(), nombre.trim()]
-      );
-      let cliente = clienteRows[0];
-      if (!cliente) {
-        const inserted = await client.query(
-          `INSERT INTO clientes (nombre, whatsapp, email) VALUES ($1, $2, $3)
-           RETURNING id, nombre, qr_token`,
-          [nombre.trim(), whatsapp.trim(), email?.trim() || null]
+      let cliente;
+      if (sesion) {
+        const { rows } = await client.query(`SELECT id, nombre, qr_token FROM clientes WHERE id = $1`, [sesion.id]);
+        cliente = rows[0];
+        if (!cliente) {
+          const err = new Error('Tu sesión ya no es válida — vuelve a iniciar sesión.');
+          err.status = 401;
+          throw err;
+        }
+      } else {
+        // La identidad del cliente es whatsapp + nombre, no solo el whatsapp: un mismo teléfono
+        // puede pertenecer a varias personas de una misma familia (ej. mamá reservando para su hija).
+        const { rows: clienteRows } = await client.query(
+          `SELECT id, nombre, qr_token FROM clientes WHERE whatsapp = $1 AND lower(nombre) = lower($2)`,
+          [whatsapp.trim(), nombre.trim()]
         );
-        cliente = inserted.rows[0];
+        cliente = clienteRows[0];
+        if (!cliente) {
+          const inserted = await client.query(
+            `INSERT INTO clientes (nombre, whatsapp, email) VALUES ($1, $2, $3)
+             RETURNING id, nombre, qr_token`,
+            [nombre.trim(), whatsapp.trim(), email?.trim() || null]
+          );
+          cliente = inserted.rows[0];
+        }
       }
 
       const { rows: existentes } = await client.query(
@@ -139,7 +167,7 @@ reservasRouter.post('/', async (req, res) => {
         await crearNotificacion(client, {
           destinatarioTipo: 'staff', destinatarioId: cu.id, tipo: 'nueva_reserva',
           titulo: 'Nueva reserva',
-          mensaje: `${nombre.trim()} se ${estado === 'confirmada' ? 'anotó' : 'unió a la lista de espera'} en tu clase de ${clase.disciplina_nombre} de las ${clase.hora_inicio?.slice(0, 5)}.`,
+          mensaje: `${cliente.nombre} se ${estado === 'confirmada' ? 'anotó' : 'unió a la lista de espera'} en tu clase de ${clase.disciplina_nombre} de las ${clase.hora_inicio?.slice(0, 5)}.`,
         });
       }
 

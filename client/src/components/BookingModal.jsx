@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { apiGet, apiPost } from '../lib/apiClient.js';
 import { disciplineTheme } from '../lib/disciplineTheme.js';
+import { useSesionCliente } from '../lib/useSesionCliente.js';
 import ClienteQrCard from './ClienteQrCard.jsx';
 
 export default function BookingModal({ claseId, onClose }) {
@@ -10,6 +12,7 @@ export default function BookingModal({ claseId, onClose }) {
   const [formError, setFormError] = useState('');
   const [form, setForm] = useState({ nombre: '', whatsapp: '', email: '' });
   const [resultado, setResultado] = useState(null); // { qrToken, estado, posicionEspera }
+  const { cliente: sesion, cargando: cargandoSesion } = useSesionCliente();
 
   useEffect(() => {
     setClase(null);
@@ -34,7 +37,7 @@ export default function BookingModal({ claseId, onClose }) {
     setFormError('');
     setEnviando(true);
     try {
-      const data = await apiPost('/reservas', { claseId: Number(claseId), ...form });
+      const data = await apiPost('/reservas', sesion ? { claseId: Number(claseId) } : { claseId: Number(claseId), ...form });
       setResultado({ qrToken: data.cliente.qrToken, estado: data.estado, posicionEspera: data.posicionEspera });
     } catch (err) {
       setFormError(err.message);
@@ -73,24 +76,40 @@ export default function BookingModal({ claseId, onClose }) {
               <p style={{ fontSize: 13, color: 'var(--ink-soft)' }}>{clase.cupoDisponible} lugares disponibles.</p>
             )}
 
-            <form onSubmit={onSubmit}>
-              <div className="field">
-                <label htmlFor="m-nombre">Nombre</label>
-                <input id="m-nombre" required value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} />
-              </div>
-              <div className="field">
-                <label htmlFor="m-whatsapp">WhatsApp</label>
-                <input id="m-whatsapp" required placeholder="+52 55 1234 5678" value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} />
-              </div>
-              <div className="field">
-                <label htmlFor="m-email">Correo (opcional)</label>
-                <input id="m-email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-              </div>
-              {formError && <div className="alert error">{formError}</div>}
-              <button className="btn btn-primary btn-block" type="submit" disabled={enviando}>
-                {enviando ? 'Reservando…' : lleno ? 'Unirme a la lista de espera' : 'Reservar'}
-              </button>
-            </form>
+            {cargandoSesion ? (
+              <div className="page-loading">Cargando…</div>
+            ) : (
+              <form onSubmit={onSubmit}>
+                {sesion ? (
+                  <p style={{ fontSize: 13.5 }}>
+                    Reservando como <strong>{sesion.nombre}</strong>.{' '}
+                    <a href="/mi-cuenta/login" style={{ fontSize: 12.5 }}>¿No eres tú?</a>
+                  </p>
+                ) : (
+                  <>
+                    <div className="field">
+                      <label htmlFor="m-nombre">Nombre</label>
+                      <input id="m-nombre" required value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} />
+                    </div>
+                    <div className="field">
+                      <label htmlFor="m-whatsapp">WhatsApp</label>
+                      <input id="m-whatsapp" required placeholder="+52 55 1234 5678" value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} />
+                    </div>
+                    <div className="field">
+                      <label htmlFor="m-email">Correo (opcional)</label>
+                      <input id="m-email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                    </div>
+                    <p style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>
+                      ¿Ya tienes cuenta? <Link to="/mi-cuenta/login">Inicia sesión</Link> para no volver a llenar esto.
+                    </p>
+                  </>
+                )}
+                {formError && <div className="alert error">{formError}</div>}
+                <button className="btn btn-primary btn-block" type="submit" disabled={enviando}>
+                  {enviando ? 'Reservando…' : lleno ? 'Unirme a la lista de espera' : 'Reservar'}
+                </button>
+              </form>
+            )}
           </>
         )}
 
