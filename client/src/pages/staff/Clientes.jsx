@@ -6,6 +6,7 @@ import TourOverlay from '../../components/TourOverlay.jsx';
 import TourButton from '../../components/TourButton.jsx';
 
 const FORM_VACIO = { id: null, nombre: '', whatsapp: '', email: '', notasInternas: '', estado: 'activo' };
+const ESTADO_RESERVA_LABEL = { confirmada: 'success', lista_espera: 'warning', cancelada: 'critical' };
 
 const TOUR_STEPS = [
   {
@@ -34,6 +35,9 @@ export default function Clientes() {
   const [cargando, setCargando] = useState(true);
   const [mensaje, setMensaje] = useState('');
   const [form, setForm] = useState(null); // null = cerrado
+  const [historialCliente, setHistorialCliente] = useState(null);
+  const [historial, setHistorial] = useState([]);
+  const [historialCargando, setHistorialCargando] = useState(false);
   const tour = useTour('clientes', TOUR_STEPS);
 
   function cargar() {
@@ -85,6 +89,15 @@ export default function Clientes() {
     } catch (err) {
       alert(err.message);
     }
+  }
+
+  function verHistorial(c) {
+    setHistorialCliente(c);
+    setHistorialCargando(true);
+    apiGet(`/staff/clientes/${c.id}/reservas`)
+      .then(setHistorial)
+      .catch(() => setHistorial([]))
+      .finally(() => setHistorialCargando(false));
   }
 
   async function borrar(c) {
@@ -181,6 +194,7 @@ export default function Clientes() {
               <td data-label="Registrado">{new Date(c.created_at).toLocaleDateString('es-MX')}</td>
               <td data-label="Cuenta">{c.tiene_acceso ? <span className="pill success">tiene acceso</span> : <span className="pill warning">sin acceso</span>}</td>
               <td data-label="Acciones" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => verHistorial(c)}>Ver reservas</button>
                 <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => crearAcceso(c)}>
                   {c.tiene_acceso ? 'Cambiar contraseña' : 'Crear acceso'}
                 </button>
@@ -196,6 +210,40 @@ export default function Clientes() {
         </tbody>
       </table>
       {!cargando && clientes.length === 0 && <div className="empty-state">No se encontró nadie con ese criterio.</div>}
+
+      {historialCliente && (
+        <div className="modal-backdrop" onClick={() => setHistorialCliente(null)}>
+          <div className="modal-panel" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 520 }}>
+            <button className="modal-close" onClick={() => setHistorialCliente(null)} aria-label="Cerrar">✕</button>
+            <h3 style={{ marginTop: 0 }}>Reservas de {historialCliente.nombre}</h3>
+
+            {historialCargando && <div className="page-loading">Cargando…</div>}
+            {!historialCargando && historial.length === 0 && (
+              <p style={{ color: 'var(--ink-soft)', fontSize: 13.5 }}>Todavía no tiene reservas.</p>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 420, overflowY: 'auto' }}>
+              {historial.map((r) => (
+                <div
+                  key={r.reserva_id}
+                  style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8,
+                    border: '1px solid var(--line)', borderLeft: `4px solid ${r.disciplina_color || 'var(--accent)'}`,
+                    borderRadius: 'var(--radius-sm)', padding: '8px 12px',
+                  }}
+                >
+                  <span>
+                    <strong>{r.fecha}</strong> {r.hora_inicio?.slice(0, 5)} · {r.disciplina_nombre} · {r.coach_nombre}
+                  </span>
+                  <span className={`pill ${r.asistio ? 'success' : ESTADO_RESERVA_LABEL[r.estado] || 'accent'}`}>
+                    {r.asistio ? 'asistió' : r.estado === 'lista_espera' ? `espera Nº${r.posicion_espera}` : r.estado}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <TourOverlay tour={tour} />
     </div>

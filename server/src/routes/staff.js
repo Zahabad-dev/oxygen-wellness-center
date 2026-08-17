@@ -151,6 +151,25 @@ staffRouter.get('/seguimientos', asyncHandler(async (req, res) => {
   res.json(rows);
 }));
 
+// ---------- Historial de reservas de un cliente: qué clases específicas ha reservado ----------
+staffRouter.get('/clientes/:id/reservas', asyncHandler(async (req, res) => {
+  const { rows } = await query(
+    `SELECT r.id AS reserva_id, r.estado, r.posicion_espera, r.creado_en,
+            c.fecha, c.hora_inicio, c.estado AS clase_estado,
+            d.nombre AS disciplina_nombre, d.color AS disciplina_color,
+            co.nombre AS coach_nombre,
+            (SELECT ch.id FROM checkins ch WHERE ch.reserva_id = r.id) IS NOT NULL AS asistio
+     FROM reservas r
+     JOIN clases c ON c.id = r.clase_id
+     JOIN disciplinas d ON d.id = c.disciplina_id
+     JOIN coaches co ON co.id = c.coach_id
+     WHERE r.cliente_id = $1
+     ORDER BY c.fecha DESC, c.hora_inicio DESC`,
+    [req.params.id]
+  );
+  res.json(rows);
+}));
+
 // ---------- Clientes: lista + buscador (recepción y admin) ----------
 staffRouter.get('/clientes', asyncHandler(async (req, res) => {
   const buscar = (req.query.buscar || '').trim();

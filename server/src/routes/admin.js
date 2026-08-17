@@ -131,7 +131,9 @@ adminRouter.get('/clases', asyncHandler(async (req, res) => {
     `SELECT c.id, c.fecha, c.hora_inicio, c.duracion_minutos, c.capacidad_maxima, c.nivel, c.descripcion, c.estado,
             d.id AS disciplina_id, d.nombre AS disciplina_nombre, d.color AS disciplina_color,
             co.id AS coach_id, co.nombre AS coach_nombre,
-            s.id AS salon_id, s.nombre AS salon_nombre
+            s.id AS salon_id, s.nombre AS salon_nombre,
+            COALESCE((SELECT count(*) FROM reservas r WHERE r.clase_id = c.id AND r.estado = 'confirmada'), 0)::int AS confirmadas,
+            COALESCE((SELECT count(*) FROM reservas r WHERE r.clase_id = c.id AND r.estado = 'lista_espera'), 0)::int AS en_espera
      FROM clases c
      JOIN disciplinas d ON d.id = c.disciplina_id
      JOIN coaches co ON co.id = c.coach_id
@@ -139,6 +141,21 @@ adminRouter.get('/clases', asyncHandler(async (req, res) => {
      WHERE c.fecha >= COALESCE($1, CURRENT_DATE - INTERVAL '7 days')
      ORDER BY c.fecha, c.hora_inicio`,
     [desde || null]
+  );
+  res.json(rows);
+}));
+
+// ---------- Roster de una clase: quién la reservó (para el detalle en Admin > Clases) ----------
+adminRouter.get('/clases/:id/reservas', asyncHandler(async (req, res) => {
+  const { rows } = await query(
+    `SELECT r.id AS reserva_id, r.estado, r.posicion_espera, r.creado_en, r.origen,
+            cl.id AS cliente_id, cl.nombre, cl.whatsapp,
+            (SELECT ch.id FROM checkins ch WHERE ch.reserva_id = r.id) IS NOT NULL AS asistio
+     FROM reservas r
+     JOIN clientes cl ON cl.id = r.cliente_id
+     WHERE r.clase_id = $1
+     ORDER BY (r.estado = 'confirmada') DESC, r.creado_en`,
+    [req.params.id]
   );
   res.json(rows);
 }));

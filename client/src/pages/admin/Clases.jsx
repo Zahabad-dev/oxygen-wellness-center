@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { apiGet, apiPost, apiPut, apiDelete } from '../../lib/apiClient.js';
 import AdminNav from '../../components/AdminNav.jsx';
+import { waLink } from '../../lib/whatsapp.js';
+
+const ESTADO_RESERVA_LABEL = { confirmada: 'success', lista_espera: 'warning', cancelada: 'critical', asistio: 'success' };
 
 const FORM_VACIO = {
   id: null, disciplinaId: '', coachId: '', salonId: '', fecha: '', horaInicio: '',
@@ -41,6 +44,9 @@ export default function Clases() {
   const [vista, setVista] = useState('lista');
   const [mesBase, setMesBase] = useState(() => { const d = new Date(); d.setDate(1); return d; });
   const [diaSeleccionado, setDiaSeleccionado] = useState(null);
+  const [rosterClase, setRosterClase] = useState(null);
+  const [roster, setRoster] = useState([]);
+  const [rosterCargando, setRosterCargando] = useState(false);
 
   function cargarClases() {
     apiGet('/admin/clases').then(setClases).catch((err) => setError(err.message));
@@ -113,6 +119,15 @@ export default function Clases() {
 
   function abrirDia(iso) {
     setDiaSeleccionado((actual) => (actual === iso ? null : iso));
+  }
+
+  function verRoster(c) {
+    setRosterClase(c);
+    setRosterCargando(true);
+    apiGet(`/admin/clases/${c.id}/reservas`)
+      .then(setRoster)
+      .catch(() => setRoster([]))
+      .finally(() => setRosterCargando(false));
   }
 
   const clasesPorDia = {};
@@ -207,9 +222,15 @@ export default function Clases() {
                 <td data-label="Disciplina"><span className="disc-dot" style={{ background: c.disciplina_color, marginRight: 6 }} />{c.disciplina_nombre}</td>
                 <td data-label="Coach">{c.coach_nombre}</td>
                 <td data-label="Salón">{c.salon_nombre}</td>
-                <td data-label="Cupo">{c.capacidad_maxima}</td>
+                <td data-label="Cupo">
+                  {c.confirmadas ?? 0}/{c.capacidad_maxima}
+                  {c.en_espera > 0 && <span className="pill warning" style={{ marginLeft: 6, fontSize: 11 }}>+{c.en_espera} espera</span>}
+                </td>
                 <td data-label="Estado"><span className={`pill ${ESTADO_LABEL[c.estado] || 'accent'}`}>{c.estado}</span></td>
                 <td data-label="Acciones" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                  <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => verRoster(c)}>
+                    Ver clientes {(c.confirmadas ?? 0) + (c.en_espera ?? 0) > 0 ? `(${(c.confirmadas ?? 0) + (c.en_espera ?? 0)})` : ''}
+                  </button>
                   <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => editar(c)}>Editar</button>
                   {c.estado === 'programada' && (
                     <button className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => cancelar(c)}>Cancelar</button>
@@ -281,8 +302,10 @@ export default function Clases() {
                       <span>
                         <strong>{c.hora_inicio?.slice(0, 5)}</strong> {c.disciplina_nombre} · {c.coach_nombre}
                         {' '}<span className={`pill ${ESTADO_LABEL[c.estado] || 'accent'}`} style={{ marginLeft: 4 }}>{c.estado}</span>
+                        {' '}<span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{c.confirmadas ?? 0}/{c.capacidad_maxima}</span>
                       </span>
                       <div style={{ display: 'flex', gap: 6 }} onClick={(e) => e.stopPropagation()}>
+                        <button type="button" className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => verRoster(c)}>Ver clientes</button>
                         {c.estado === 'programada' && (
                           <button type="button" className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => cancelar(c)}>Cancelar</button>
                         )}
@@ -296,6 +319,48 @@ export default function Clases() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {rosterClase && (
+        <div className="modal-backdrop" onClick={() => setRosterClase(null)}>
+          <div className="modal-panel" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
+            <button className="modal-close" onClick={() => setRosterClase(null)} aria-label="Cerrar">✕</button>
+            <h3 style={{ marginTop: 0 }}>
+              {rosterClase.fecha} · {rosterClase.hora_inicio?.slice(0, 5)} · {rosterClase.disciplina_nombre} · {rosterClase.coach_nombre}
+            </h3>
+            <p style={{ color: 'var(--ink-soft)', fontSize: 13, marginTop: -6 }}>
+              {rosterClase.confirmadas ?? 0}/{rosterClase.capacidad_maxima} confirmadas
+              {rosterClase.en_espera > 0 ? ` · ${rosterClase.en_espera} en lista de espera` : ''}
+            </p>
+
+            {rosterCargando && <div className="page-loading">Cargando…</div>}
+            {!rosterCargando && roster.length === 0 && (
+              <p style={{ color: 'var(--ink-soft)', fontSize: 13.5 }}>Nadie ha reservado esta clase todavía.</p>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {roster.map((r) => (
+                <div
+                  key={r.reserva_id}
+                  style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8,
+                    border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', padding: '8px 12px',
+                  }}
+                >
+                  <span>
+                    <strong>{r.nombre}</strong>
+                    {' '}<span className={`pill ${r.asistio ? 'success' : ESTADO_RESERVA_LABEL[r.estado] || 'accent'}`}>
+                      {r.asistio ? 'asistió' : r.estado === 'lista_espera' ? `espera Nº${r.posicion_espera}` : r.estado}
+                    </span>
+                  </span>
+                  <a className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 12.5 }} href={waLink(r.whatsapp, '')} target="_blank" rel="noreferrer">
+                    WhatsApp
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>
