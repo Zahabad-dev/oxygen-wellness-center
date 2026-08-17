@@ -129,6 +129,58 @@ staffRouter.get('/agenda-hoy', asyncHandler(async (req, res) => {
   res.json(rows);
 }));
 
+// ---------- Mi agenda: calendario individual del coach, con historial y reservas activas ----------
+staffRouter.get('/mi-agenda/resumen', asyncHandler(async (req, res) => {
+  if (req.staff.rol !== 'coach' || !req.staff.coachId) {
+    return res.status(403).json({ error: 'Esta vista es solo para coaches.' });
+  }
+  const { rows } = await query(
+    `SELECT
+       COALESCE((SELECT count(*) FROM clases WHERE coach_id = $1 AND estado != 'cancelada' AND fecha < CURRENT_DATE), 0)::int AS clases_impartidas,
+       COALESCE((
+         SELECT count(*) FROM checkins ch
+         JOIN reservas r ON r.id = ch.reserva_id
+         JOIN clases c ON c.id = r.clase_id
+         WHERE c.coach_id = $1
+       ), 0)::int AS personas_atendidas`,
+    [req.staff.coachId]
+  );
+  res.json(rows[0]);
+}));
+
+// Todas las clases del coach (pasadas y futuras) con su roster — alimenta el calendario
+// individual: historial de asistencia en los días pasados, reservas activas en los que vienen.
+staffRouter.get('/mi-agenda/clases', asyncHandler(async (req, res) => {
+  if (req.staff.rol !== 'coach' || !req.staff.coachId) {
+    return res.status(403).json({ error: 'Esta vista es solo para coaches.' });
+  }
+  const { desde } = req.query;
+  const { rows } = await query(
+    `SELECT
+       c.id, c.fecha, c.hora_inicio, c.duracion_minutos, c.capacidad_maxima, c.nivel, c.estado,
+       d.nombre AS disciplina_nombre, d.color AS disciplina_color,
+       s.nombre AS salon_nombre,
+       COALESCE(
+         json_agg(
+           json_build_object(
+             'reservaId', r.id, 'clienteId', cl.id, 'nombre', cl.nombre, 'whatsapp', cl.whatsapp,
+             'estado', r.estado, 'posicionEspera', r.posicion_espera
+           ) ORDER BY r.creado_en
+         ) FILTER (WHERE r.id IS NOT NULL), '[]'
+       ) AS roster
+     FROM clases c
+     JOIN disciplinas d ON d.id = c.disciplina_id
+     JOIN salones s ON s.id = c.salon_id
+     LEFT JOIN reservas r ON r.clase_id = c.id AND r.estado IN ('confirmada','lista_espera','asistio')
+     LEFT JOIN clientes cl ON cl.id = r.cliente_id
+     WHERE c.coach_id = $1 AND c.fecha >= COALESCE($2, CURRENT_DATE - INTERVAL '90 days')
+     GROUP BY c.id, d.nombre, d.color, s.nombre
+     ORDER BY c.fecha, c.hora_inicio`,
+    [req.staff.coachId, desde || null]
+  );
+  res.json(rows);
+}));
+
 // ---------- Seguimiento a clientes nuevos: reservas confirmadas que arrancan en <= 2h,
 // de clientes que reservan por primera vez (recepción y admin, para recordarles avisar por WhatsApp) ----------
 staffRouter.get('/seguimientos', asyncHandler(async (req, res) => {

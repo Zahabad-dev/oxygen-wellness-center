@@ -11,6 +11,7 @@ const MiQr = lazy(() => import('./pages/MiQr.jsx'));
 const StaffLogin = lazy(() => import('./pages/staff/Login.jsx'));
 const StaffCheckin = lazy(() => import('./pages/staff/Checkin.jsx'));
 const StaffAgendaHoy = lazy(() => import('./pages/staff/AgendaHoy.jsx'));
+const StaffMiAgenda = lazy(() => import('./pages/staff/MiAgenda.jsx'));
 const AdminCoaches = lazy(() => import('./pages/admin/Coaches.jsx'));
 const AdminClases = lazy(() => import('./pages/admin/Clases.jsx'));
 const AdminUsuarios = lazy(() => import('./pages/admin/Usuarios.jsx'));
@@ -32,6 +33,7 @@ function Topbar() {
         {isAuthenticated ? (
           <>
             <NavLink to="/staff/agenda">Agenda</NavLink>
+            {user.rol === 'coach' && <NavLink to="/staff/mi-agenda">Mi agenda</NavLink>}
             {(user.rol === 'administrador' || user.rol === 'recepcion') && <NavLink to="/staff/checkin">Check-in</NavLink>}
             {(user.rol === 'administrador' || user.rol === 'recepcion') && <NavLink to="/staff/clientes">Clientes</NavLink>}
             {user.rol === 'administrador' && <NavLink to="/admin/clases">Admin</NavLink>}
@@ -81,6 +83,14 @@ export default function App() {
                   element={
                     <ProtectedRoute>
                       <StaffAgendaHoy />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/staff/mi-agenda"
+                  element={
+                    <ProtectedRoute roles={['coach']}>
+                      <StaffMiAgenda />
                     </ProtectedRoute>
                   }
                 />
