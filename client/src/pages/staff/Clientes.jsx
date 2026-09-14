@@ -6,6 +6,7 @@ import TourOverlay from '../../components/TourOverlay.jsx';
 import TourButton from '../../components/TourButton.jsx';
 
 const FORM_VACIO = { id: null, nombre: '', whatsapp: '', email: '', notasInternas: '', estado: 'activo' };
+const NUEVO_VACIO = { nombre: '', whatsapp: '', email: '', notasInternas: '' };
 const ESTADO_RESERVA_LABEL = { confirmada: 'success', lista_espera: 'warning', cancelada: 'critical' };
 
 const TOUR_STEPS = [
@@ -35,6 +36,9 @@ export default function Clientes() {
   const [cargando, setCargando] = useState(true);
   const [mensaje, setMensaje] = useState('');
   const [form, setForm] = useState(null); // null = cerrado
+  const [nuevo, setNuevo] = useState(null); // null = formulario cerrado
+  const [guardandoNuevo, setGuardandoNuevo] = useState(false);
+  const [soloSinCuenta, setSoloSinCuenta] = useState(false);
   const [historialCliente, setHistorialCliente] = useState(null);
   const [historial, setHistorial] = useState([]);
   const [historialCargando, setHistorialCargando] = useState(false);
@@ -48,6 +52,23 @@ export default function Clientes() {
       .catch((err) => setError(err.message))
       .finally(() => setCargando(false));
   }
+
+  async function crearCliente(e) {
+    e.preventDefault();
+    setGuardandoNuevo(true);
+    try {
+      await apiPost('/staff/clientes', nuevo);
+      setNuevo(null);
+      setMensaje(`${nuevo.nombre} fue registrado.`);
+      cargar();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setGuardandoNuevo(false);
+    }
+  }
+
+  const clientesFiltrados = soloSinCuenta ? clientes.filter((c) => !c.tiene_acceso) : clientes;
 
   useEffect(() => {
     const t = setTimeout(cargar, 250);
@@ -117,14 +138,55 @@ export default function Clientes() {
         <div>
           <span className="eyebrow">Clientes</span>
           <h1>Personas registradas</h1>
-          <p style={{ color: 'var(--ink-soft)' }}>Se crean automáticamente en su primera reserva — aquí ves quién se ha registrado, cuántas clases ha tomado, y puedes darle acceso a su propia cuenta.</p>
+          <p style={{ color: 'var(--ink-soft)' }}>
+            Se crean automáticamente en su primera reserva, pero también puedes registrar aquí a quien pague o
+            se apunte sin escanear el QR. Aquí ves quién se ha registrado, cuántas clases ha tomado, y puedes
+            darle acceso a su propia cuenta.
+          </p>
         </div>
-        <TourButton tour={tour} />
+        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+          <button className="btn btn-primary" type="button" onClick={() => setNuevo(NUEVO_VACIO)}>Nuevo cliente</button>
+          <TourButton tour={tour} />
+        </div>
       </div>
+
+      {nuevo && (
+        <form onSubmit={crearCliente} className="card" style={{ marginBottom: 20, maxWidth: 480 }}>
+          <h3 style={{ marginTop: 0 }}>Registrar cliente manualmente</h3>
+          <p style={{ fontSize: 12.5, color: 'var(--ink-faint)', marginTop: -6 }}>
+            Para alguien que ya está en el estudio o pagó, pero no reservó por el sitio ni escaneó nada todavía.
+          </p>
+          <div className="field">
+            <label htmlFor="n-nombre">Nombre</label>
+            <input id="n-nombre" required value={nuevo.nombre} onChange={(e) => setNuevo({ ...nuevo, nombre: e.target.value })} />
+          </div>
+          <div className="field">
+            <label htmlFor="n-whatsapp">WhatsApp</label>
+            <input id="n-whatsapp" required value={nuevo.whatsapp} onChange={(e) => setNuevo({ ...nuevo, whatsapp: e.target.value })} placeholder="7351234567" />
+          </div>
+          <div className="field">
+            <label htmlFor="n-email">Correo (opcional)</label>
+            <input id="n-email" value={nuevo.email} onChange={(e) => setNuevo({ ...nuevo, email: e.target.value })} />
+          </div>
+          <div className="field">
+            <label htmlFor="n-notas">Notas internas (opcional)</label>
+            <textarea id="n-notas" rows={2} value={nuevo.notasInternas} onChange={(e) => setNuevo({ ...nuevo, notasInternas: e.target.value })} />
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button className="btn btn-primary" type="submit" disabled={guardandoNuevo}>Registrar</button>
+            <button type="button" className="btn btn-secondary" onClick={() => setNuevo(null)}>Cancelar</button>
+          </div>
+        </form>
+      )}
 
       <div className="field" style={{ maxWidth: 320 }} data-tour="clientes-buscar">
         <label htmlFor="buscar">Buscar por nombre o WhatsApp</label>
         <input id="buscar" value={buscar} onChange={(e) => setBuscar(e.target.value)} placeholder="Ej. María, 55…" />
+      </div>
+
+      <div className="chip-row">
+        <span className={`chip ${!soloSinCuenta ? 'active' : ''}`} onClick={() => setSoloSinCuenta(false)}>Todos</span>
+        <span className={`chip ${soloSinCuenta ? 'active' : ''}`} onClick={() => setSoloSinCuenta(true)}>Sin cuenta todavía</span>
       </div>
 
       {mensaje && <div className="alert success">{mensaje}</div>}
@@ -184,7 +246,7 @@ export default function Clientes() {
           </tr>
         </thead>
         <tbody>
-          {clientes.map((c) => (
+          {clientesFiltrados.map((c) => (
             <tr key={c.id}>
               <td data-label="Nombre">{c.nombre}</td>
               <td data-label="WhatsApp">{c.whatsapp}</td>
@@ -209,7 +271,9 @@ export default function Clientes() {
           ))}
         </tbody>
       </table>
-      {!cargando && clientes.length === 0 && <div className="empty-state">No se encontró nadie con ese criterio.</div>}
+      {!cargando && clientesFiltrados.length === 0 && (
+        <div className="empty-state">{soloSinCuenta ? 'Todos los que aparecen ya tienen cuenta.' : 'No se encontró nadie con ese criterio.'}</div>
+      )}
 
       {historialCliente && (
         <div className="modal-backdrop" onClick={() => setHistorialCliente(null)}>

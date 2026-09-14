@@ -4,9 +4,21 @@ import { asyncHandler } from '../asyncHandler.js';
 
 export const catalogoRouter = Router();
 
+const HERO_DEFAULT = {
+  imagenUrl: '/images/hero-image.png',
+  titulo: 'Wellness Studio',
+  subtitulo: 'Respira, Reconecta y Fluye.',
+  ctaTexto: 'Reservar',
+};
+
+catalogoRouter.get('/contenido/hero', asyncHandler(async (_req, res) => {
+  const { rows } = await query(`SELECT valor FROM configuracion_general WHERE clave = 'sitio_hero'`);
+  res.json({ ...HERO_DEFAULT, ...(rows[0]?.valor || {}) });
+}));
+
 catalogoRouter.get('/disciplinas', asyncHandler(async (_req, res) => {
   const { rows } = await query(
-    `SELECT id, nombre, color, descripcion FROM disciplinas WHERE activo = true ORDER BY nombre`
+    `SELECT id, nombre, color, descripcion, imagen_url FROM disciplinas WHERE activo = true ORDER BY nombre`
   );
   res.json(rows);
 }));

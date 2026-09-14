@@ -29,11 +29,19 @@ const HORARIO_SEMANA = [
   { dia: 'Sábado', clases: [['08:00', 'Funcional']] },
 ];
 
+const HERO_FALLBACK = {
+  imagenUrl: '/images/hero-image.png',
+  titulo: 'Wellness Studio',
+  subtitulo: 'Respira, Reconecta y Fluye.',
+  ctaTexto: 'Reservar',
+};
+
 export default function Catalogo() {
   const [disciplinas, setDisciplinas] = useState([]);
   const [coaches, setCoaches] = useState([]);
   const [destacados, setDestacados] = useState([]);
   const [clases, setClases] = useState([]);
+  const [hero, setHero] = useState(HERO_FALLBACK);
   const [disciplinaId, setDisciplinaId] = useState(null);
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(true);
@@ -45,6 +53,7 @@ export default function Catalogo() {
     apiGet('/disciplinas').then(setDisciplinas).catch(() => {});
     apiGet('/coaches').then(setCoaches).catch(() => {});
     apiGet('/destacados').then(setDestacados).catch(() => {});
+    apiGet('/contenido/hero').then(setHero).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -111,13 +120,13 @@ export default function Catalogo() {
     <div className="landing" ref={landingRef}>
       {/* ---------- Hero ---------- */}
       <section className="hero">
-        <div className="hero-bg" ref={heroBgRef} style={{ backgroundImage: "url('/images/hero-image.png')" }} />
+        <div className="hero-bg" ref={heroBgRef} style={{ backgroundImage: `url('${hero.imagenUrl}')` }} />
         <div className="hero-overlay" />
         <img className="hero-logo" src="/images/logo-oxigen.png" alt="Oxigen Wellness Center" loading="eager" />
         <div className="hero-inner">
-          <h1 className="hero-title">Wellness Studio</h1>
-          <p className="hero-sub">Respira, Reconecta y Fluye.</p>
-          <a href="#calendario" className="btn hero-cta">Reservar</a>
+          <h1 className="hero-title">{hero.titulo}</h1>
+          <p className="hero-sub">{hero.subtitulo}</p>
+          <a href="#calendario" className="btn hero-cta">{hero.ctaTexto}</a>
         </div>
       </section>
 
@@ -171,7 +180,7 @@ export default function Catalogo() {
                 >
                   <img
                     className="discipline-tile-photo"
-                    src={theme.image}
+                    src={d.imagen_url || theme.image}
                     alt={d.nombre}
                     loading="lazy"
                     decoding="async"

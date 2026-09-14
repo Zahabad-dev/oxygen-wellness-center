@@ -5,9 +5,11 @@ export default function AdminNav() {
     <div className="chip-row" style={{ marginBottom: 22 }}>
       <NavLink to="/admin/coaches" className={({ isActive }) => `chip ${isActive ? 'active' : ''}`}>Coaches</NavLink>
       <NavLink to="/admin/clases" className={({ isActive }) => `chip ${isActive ? 'active' : ''}`}>Clases</NavLink>
+      <NavLink to="/admin/disciplinas" className={({ isActive }) => `chip ${isActive ? 'active' : ''}`}>Disciplinas</NavLink>
       <NavLink to="/admin/usuarios" className={({ isActive }) => `chip ${isActive ? 'active' : ''}`}>Usuarios</NavLink>
       <NavLink to="/admin/recompensas" className={({ isActive }) => `chip ${isActive ? 'active' : ''}`}>Recompensas</NavLink>
       <NavLink to="/admin/destacados" className={({ isActive }) => `chip ${isActive ? 'active' : ''}`}>Destacados</NavLink>
+      <NavLink to="/admin/contenido" className={({ isActive }) => `chip ${isActive ? 'active' : ''}`}>Contenido</NavLink>
       <NavLink to="/staff/clientes" className={({ isActive }) => `chip ${isActive ? 'active' : ''}`}>Clientes</NavLink>
     </div>
   );

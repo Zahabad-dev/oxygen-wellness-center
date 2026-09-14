@@ -255,6 +255,32 @@ staffRouter.get('/clientes', asyncHandler(async (req, res) => {
   res.json(rows);
 }));
 
+// ---------- Registrar cliente a mano (no escaneó QR ni reservó en línea) ----------
+staffRouter.post('/clientes', asyncHandler(async (req, res) => {
+  if (!['administrador', 'recepcion'].includes(req.staff.rol)) {
+    return res.status(403).json({ error: 'No tienes permiso para esta acción.' });
+  }
+  const { nombre, whatsapp, email, notasInternas } = req.body || {};
+  if (!nombre?.trim() || !whatsapp?.trim()) {
+    return res.status(400).json({ error: 'Nombre y WhatsApp son obligatorios.' });
+  }
+
+  try {
+    const { rows } = await query(
+      `INSERT INTO clientes (nombre, whatsapp, email, notas_internas)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, nombre, whatsapp, email, qr_token, created_at`,
+      [nombre.trim(), whatsapp.trim(), email?.trim() || null, notasInternas?.trim() || null]
+    );
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'Ya existe un cliente con ese nombre y WhatsApp.' });
+    }
+    throw err;
+  }
+}));
+
 // ---------- Crear acceso al portal para un cliente (nombre/whatsapp ya conocidos) ----------
 staffRouter.post('/clientes/:id/crear-acceso', asyncHandler(async (req, res) => {
   if (!['administrador', 'recepcion'].includes(req.staff.rol)) {

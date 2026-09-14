@@ -51,6 +51,63 @@ adminRouter.delete('/destacados/:id', asyncHandler(async (req, res) => {
   res.json({ ok: true });
 }));
 
+// ---------- Contenido del sitio: hero (foto/título) — guardado en configuracion_general ----------
+const HERO_DEFAULT = {
+  imagenUrl: '/images/hero-image.png',
+  titulo: 'Wellness Studio',
+  subtitulo: 'Respira, Reconecta y Fluye.',
+  ctaTexto: 'Reservar',
+};
+
+adminRouter.get('/contenido/hero', asyncHandler(async (_req, res) => {
+  const { rows } = await query(`SELECT valor FROM configuracion_general WHERE clave = 'sitio_hero'`);
+  res.json({ ...HERO_DEFAULT, ...(rows[0]?.valor || {}) });
+}));
+
+adminRouter.put('/contenido/hero', asyncHandler(async (req, res) => {
+  const { imagenUrl, titulo, subtitulo, ctaTexto } = req.body || {};
+  if (!imagenUrl?.trim() || !titulo?.trim()) {
+    return res.status(400).json({ error: 'La imagen y el título son obligatorios.' });
+  }
+  const valor = {
+    imagenUrl: imagenUrl.trim(),
+    titulo: titulo.trim(),
+    subtitulo: subtitulo?.trim() || '',
+    ctaTexto: ctaTexto?.trim() || 'Reservar',
+  };
+  await query(
+    `INSERT INTO configuracion_general (clave, valor, descripcion)
+     VALUES ('sitio_hero', $1::jsonb, 'Foto y texto del hero del landing')
+     ON CONFLICT (clave) DO UPDATE SET valor = $1::jsonb`,
+    [JSON.stringify(valor)]
+  );
+  res.json(valor);
+}));
+
+// ---------- Disciplinas: color y foto que se muestran en el landing (nombre/orden son fijos) ----------
+adminRouter.get('/disciplinas', asyncHandler(async (_req, res) => {
+  const { rows } = await query(
+    `SELECT id, nombre, color, descripcion, imagen_url, activo FROM disciplinas ORDER BY nombre`
+  );
+  res.json(rows);
+}));
+
+adminRouter.put('/disciplinas/:id', asyncHandler(async (req, res) => {
+  const { color, descripcion, imagenUrl, activo } = req.body || {};
+  const { rows } = await query(
+    `UPDATE disciplinas SET
+       color = COALESCE($1, color),
+       descripcion = $2,
+       imagen_url = $3,
+       activo = COALESCE($4, activo)
+     WHERE id = $5
+     RETURNING id`,
+    [color || null, descripcion?.trim() || null, imagenUrl?.trim() || null, activo, req.params.id]
+  );
+  if (!rows[0]) return res.status(404).json({ error: 'Disciplina no encontrada.' });
+  res.json({ ok: true });
+}));
+
 // ---------- Salones (solo lectura por ahora — se crean vía seed/SQL) ----------
 adminRouter.get('/salones', asyncHandler(async (_req, res) => {
   const { rows } = await query(

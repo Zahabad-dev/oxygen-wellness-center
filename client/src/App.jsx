@@ -17,6 +17,8 @@ const AdminClases = lazy(() => import('./pages/admin/Clases.jsx'));
 const AdminUsuarios = lazy(() => import('./pages/admin/Usuarios.jsx'));
 const AdminRecompensas = lazy(() => import('./pages/admin/Recompensas.jsx'));
 const AdminDestacados = lazy(() => import('./pages/admin/Destacados.jsx'));
+const AdminContenido = lazy(() => import('./pages/admin/Contenido.jsx'));
+const AdminDisciplinas = lazy(() => import('./pages/admin/Disciplinas.jsx'));
 const StaffClientes = lazy(() => import('./pages/staff/Clientes.jsx'));
 const ClientLogin = lazy(() => import('./pages/ClientLogin.jsx'));
 const ClientPortal = lazy(() => import('./pages/ClientPortal.jsx'));
@@ -131,6 +133,22 @@ export default function App() {
                   element={
                     <ProtectedRoute roles={['administrador']}>
                       <AdminDestacados />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/disciplinas"
+                  element={
+                    <ProtectedRoute roles={['administrador']}>
+                      <AdminDisciplinas />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/contenido"
+                  element={
+                    <ProtectedRoute roles={['administrador']}>
+                      <AdminContenido />
                     </ProtectedRoute>
                   }
                 />
