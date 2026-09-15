@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { apiGet, apiPost, apiPut, apiDelete } from '../../lib/apiClient.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useTour } from '../../lib/useTour.js';
@@ -44,6 +44,7 @@ export default function Clientes() {
   const [historial, setHistorial] = useState([]);
   const [historialCargando, setHistorialCargando] = useState(false);
   const [fusion, setFusion] = useState(null); // null = cerrado
+  const [expandido, setExpandido] = useState(null); // id del cliente con el desplegable abierto
   const tour = useTour('clientes', TOUR_STEPS);
 
   function cargar() {
@@ -71,6 +72,7 @@ export default function Clientes() {
   }
 
   const clientesFiltrados = soloSinCuenta ? clientes.filter((c) => !c.tiene_acceso) : clientes;
+  const clientesOrdenados = [...clientesFiltrados].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
 
   useEffect(() => {
     const t = setTimeout(cargar, 250);
@@ -294,34 +296,49 @@ export default function Clientes() {
       <table className="responsive">
         <thead data-tour="clientes-columnas">
           <tr>
-            <th>Nombre</th><th>WhatsApp</th><th>Correo</th><th>Cumpleaños</th><th>Clases tomadas</th><th>Reservas</th><th>Registrado</th><th>Cuenta</th><th>Acciones</th>
+            <th style={{ width: 60 }}>ID</th><th>Nombre</th><th style={{ width: 40 }}></th>
           </tr>
         </thead>
         <tbody>
-          {clientesFiltrados.map((c) => (
-            <tr key={c.id}>
-              <td data-label="Nombre">{c.nombre}</td>
-              <td data-label="WhatsApp">{c.whatsapp}</td>
-              <td data-label="Correo">{c.email || '—'}</td>
-              <td data-label="Cumpleaños">{c.cumple_dia && c.cumple_mes ? `${String(c.cumple_dia).padStart(2, '0')}/${String(c.cumple_mes).padStart(2, '0')}` : '—'}</td>
-              <td data-label="Clases tomadas"><span className="pill success">{c.clases_tomadas}</span></td>
-              <td data-label="Reservas"><span className="pill accent">{c.reservas_total}</span></td>
-              <td data-label="Registrado">{new Date(c.created_at).toLocaleDateString('es-MX')}</td>
-              <td data-label="Cuenta">{c.tiene_acceso ? <span className="pill success">tiene acceso</span> : <span className="pill warning">sin acceso</span>}</td>
-              <td data-label="Acciones" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => verHistorial(c)}>Ver reservas</button>
-                <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => crearAcceso(c)}>
-                  {c.tiene_acceso ? 'Cambiar contraseña' : 'Crear acceso'}
-                </button>
-                {esAdmin && (
-                  <>
-                    <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => editar(c)}>Editar</button>
-                    <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => abrirFusion(c)}>Fusionar duplicado</button>
-                    <button className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: 12.5, color: 'var(--critical)' }} onClick={() => borrar(c)}>Borrar</button>
-                  </>
-                )}
-              </td>
-            </tr>
+          {clientesOrdenados.map((c) => (
+            <Fragment key={c.id}>
+              <tr onClick={() => setExpandido((id) => (id === c.id ? null : c.id))} style={{ cursor: 'pointer' }}>
+                <td data-label="ID">#{c.id}</td>
+                <td data-label="Nombre">
+                  {c.nombre}{' '}
+                  {c.tiene_acceso ? <span className="pill success" style={{ marginLeft: 6 }}>acceso</span> : null}
+                </td>
+                <td style={{ textAlign: 'right', color: 'var(--ink-faint)' }}>{expandido === c.id ? '▲' : '▼'}</td>
+              </tr>
+              {expandido === c.id && (
+                <tr>
+                  <td colSpan={3} style={{ background: 'var(--surface-soft, rgba(0,0,0,0.02))' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, padding: '10px 4px' }}>
+                      <div><strong>WhatsApp</strong><br />{c.whatsapp}</div>
+                      <div><strong>Correo</strong><br />{c.email || '—'}</div>
+                      <div><strong>Cumpleaños</strong><br />{c.cumple_dia && c.cumple_mes ? `${String(c.cumple_dia).padStart(2, '0')}/${String(c.cumple_mes).padStart(2, '0')}` : '—'}</div>
+                      <div><strong>Clases tomadas</strong><br /><span className="pill success">{c.clases_tomadas}</span></div>
+                      <div><strong>Reservas</strong><br /><span className="pill accent">{c.reservas_total}</span></div>
+                      <div><strong>Registrado</strong><br />{new Date(c.created_at).toLocaleDateString('es-MX')}</div>
+                      <div><strong>Cuenta</strong><br />{c.tiene_acceso ? <span className="pill success">tiene acceso</span> : <span className="pill warning">sin acceso</span>}</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', padding: '0 4px 10px' }}>
+                      <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => verHistorial(c)}>Ver reservas</button>
+                      <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => crearAcceso(c)}>
+                        {c.tiene_acceso ? 'Cambiar contraseña' : 'Crear acceso'}
+                      </button>
+                      {esAdmin && (
+                        <>
+                          <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => editar(c)}>Editar</button>
+                          <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => abrirFusion(c)}>Fusionar duplicado</button>
+                          <button className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: 12.5, color: 'var(--critical)' }} onClick={() => borrar(c)}>Borrar</button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </Fragment>
           ))}
         </tbody>
       </table>

@@ -250,8 +250,8 @@ staffRouter.get('/clientes', asyncHandler(async (req, res) => {
        FROM checkins GROUP BY cliente_id
      ) a ON a.cliente_id = cl.id
      ${filtro}
-     ORDER BY cl.created_at DESC
-     LIMIT 50`,
+     ORDER BY nombre_normalizado(cl.nombre)
+     LIMIT 300`,
     params
   );
   res.json(rows);
