@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { apiGet, apiPut } from '../../lib/apiClient.js';
 import AdminNav from '../../components/AdminNav.jsx';
+import ImageUploadField from '../../components/ImageUploadField.jsx';
 
 export default function Disciplinas() {
   const [disciplinas, setDisciplinas] = useState([]);
@@ -50,9 +51,7 @@ export default function Disciplinas() {
       <AdminNav />
 
       <p style={{ color: 'var(--ink-soft)', maxWidth: 560 }}>
-        La foto, el color y la descripción de cada disciplina tal como aparecen en el catálogo del sitio. La imagen
-        debe existir ya en el sitio (súbela primero a <code>client/public/images/</code> y aquí pon su ruta, como
-        <code> /images/yoga.jpg</code>).
+        La foto, el color y la descripción de cada disciplina tal como aparecen en el catálogo del sitio.
       </p>
 
       {error && <div className="alert error">{error}</div>}
@@ -61,10 +60,12 @@ export default function Disciplinas() {
       {form && (
         <form onSubmit={onSubmit} className="card" style={{ marginBottom: 24, maxWidth: 520 }}>
           <h3 style={{ marginTop: 0 }}>Editar "{form.nombre}"</h3>
-          <div className="field">
-            <label htmlFor="imagenUrl">Ruta de la foto</label>
-            <input id="imagenUrl" value={form.imagenUrl} onChange={(e) => setForm({ ...form, imagenUrl: e.target.value })} placeholder="/images/yoga.jpg" />
-          </div>
+          <ImageUploadField
+            id="imagenUrl"
+            label="Foto de la disciplina"
+            value={form.imagenUrl}
+            onChange={(imagenUrl) => setForm({ ...form, imagenUrl })}
+          />
           <div className="field">
             <label htmlFor="color">Color (para el calendario)</label>
             <input id="color" type="color" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} style={{ width: 80, padding: 4 }} />
@@ -77,12 +78,6 @@ export default function Disciplinas() {
             <input type="checkbox" checked={form.activo} onChange={(e) => setForm({ ...form, activo: e.target.checked })} />
             Activa (visible en el sitio)
           </label>
-          {form.imagenUrl && (
-            <div className="field">
-              <label>Vista previa</label>
-              <img src={form.imagenUrl} alt="Vista previa" style={{ width: '100%', maxHeight: 180, objectFit: 'cover', borderRadius: 'var(--radius-sm)' }} />
-            </div>
-          )}
           <div style={{ display: 'flex', gap: 10 }}>
             <button className="btn btn-primary" type="submit" disabled={guardando}>Guardar cambios</button>
             <button type="button" className="btn btn-secondary" onClick={() => setForm(null)}>Cancelar</button>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { apiGet, apiPost, apiPut, apiDelete } from '../../lib/apiClient.js';
 import AdminNav from '../../components/AdminNav.jsx';
+import ImageUploadField from '../../components/ImageUploadField.jsx';
 
 const FORM_VACIO = { id: null, nombre: '', bio: '', fotoUrl: '', disciplinaIds: [] };
 
@@ -80,10 +81,12 @@ export default function Coaches() {
           <label htmlFor="bio">Bio (opcional)</label>
           <textarea id="bio" rows={2} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />
         </div>
-        <div className="field">
-          <label htmlFor="foto">URL de foto (opcional)</label>
-          <input id="foto" value={form.fotoUrl} onChange={(e) => setForm({ ...form, fotoUrl: e.target.value })} placeholder="https://…" />
-        </div>
+        <ImageUploadField
+          id="foto"
+          label="Foto del coach (opcional)"
+          value={form.fotoUrl}
+          onChange={(fotoUrl) => setForm({ ...form, fotoUrl })}
+        />
         <div className="field">
           <label>Disciplinas que imparte</label>
           <div className="chip-row" style={{ marginBottom: 0 }}>

@@ -8,6 +8,7 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 
 import config from './config.js';
+import { uploadsDir } from './uploads.js';
 import { authRouter, requireAuth, requireRole } from './auth.js';
 import { catalogoRouter } from './routes/catalogo.js';
 import { reservasRouter } from './routes/reservas.js';
@@ -41,6 +42,9 @@ app.use('/api/staff', requireAuth, staffRouter);
 
 // ---------- Admin (protegido, solo rol administrador) ----------
 app.use('/api/admin', requireAuth, requireRole('administrador'), adminRouter);
+
+// ---------- Fotos subidas desde Admin (hero, coaches, disciplinas) — volumen persistente ----------
+app.use('/uploads', express.static(uploadsDir, { maxAge: '30d' }));
 
 // ---------- Cliente estático (build de Vite) ----------
 const clientDist = resolve(config.clientDist);

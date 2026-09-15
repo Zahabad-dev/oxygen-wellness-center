@@ -3,10 +3,20 @@ import bcrypt from 'bcryptjs';
 import config from '../config.js';
 import { query, withTransaction } from '../db.js';
 import { asyncHandler } from '../asyncHandler.js';
+import { uploadImage } from '../uploads.js';
 
 const ROLES_VALIDOS = ['administrador', 'recepcion', 'coach'];
 
 export const adminRouter = Router();
+
+// ---------- Subida de fotos (hero, coaches, disciplinas) a un volumen persistente del servidor ----------
+adminRouter.post('/uploads', (req, res) => {
+  uploadImage.single('imagen')(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err.message || 'No se pudo subir la imagen.' });
+    if (!req.file) return res.status(400).json({ error: 'Falta el archivo de imagen.' });
+    res.status(201).json({ url: `/uploads/${req.file.filename}` });
+  });
+});
 
 // ---------- Destacados: eventos/talleres especiales del carrusel del landing ----------
 adminRouter.get('/destacados', asyncHandler(async (_req, res) => {

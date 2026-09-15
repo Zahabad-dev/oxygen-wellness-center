@@ -20,3 +20,14 @@ export const apiGet = (endpoint) => req(endpoint);
 export const apiPost = (endpoint, body) => req(endpoint, { method: 'POST', body: JSON.stringify(body) });
 export const apiPut = (endpoint, body) => req(endpoint, { method: 'PUT', body: JSON.stringify(body) });
 export const apiDelete = (endpoint) => req(endpoint, { method: 'DELETE' });
+
+// Subida de imágenes (multipart, sin el Content-Type: application/json del resto de apiClient).
+export async function apiUpload(endpoint, file) {
+  const formData = new FormData();
+  formData.append('imagen', file);
+  const res = await fetch(`${BASE}${endpoint}`, { method: 'POST', credentials: 'include', body: formData });
+  const isJson = (res.headers.get('content-type') || '').includes('application/json');
+  const data = isJson ? await res.json() : null;
+  if (!res.ok) throw new Error((data && data.error) || `Error ${res.status}`);
+  return data;
+}
