@@ -226,12 +226,25 @@ staffRouter.get('/clientes/:id/reservas', asyncHandler(async (req, res) => {
 // ---------- Clientes: lista + buscador (recepción y admin) ----------
 staffRouter.get('/clientes', asyncHandler(async (req, res) => {
   const buscar = (req.query.buscar || '').trim();
+  // campoFecha: 'registro' (cuándo se creó el perfil) o 'primera_clase' (su primer check-in real).
+  const { desde, hasta, campoFecha } = req.query;
+  const columnaFecha = campoFecha === 'primera_clase' ? 'a.primera_clase' : 'cl.created_at';
+
   const params = [];
-  let filtro = '';
+  const clausulas = [];
   if (buscar) {
     params.push(`%${buscar}%`);
-    filtro = `WHERE cl.nombre ILIKE $${params.length} OR cl.whatsapp ILIKE $${params.length}`;
+    clausulas.push(`(cl.nombre ILIKE $${params.length} OR cl.whatsapp ILIKE $${params.length})`);
   }
+  if (desde) {
+    params.push(desde);
+    clausulas.push(`${columnaFecha}::date >= $${params.length}`);
+  }
+  if (hasta) {
+    params.push(hasta);
+    clausulas.push(`${columnaFecha}::date <= $${params.length}`);
+  }
+  const filtro = clausulas.length ? `WHERE ${clausulas.join(' AND ')}` : '';
 
   const { rows } = await query(
     `SELECT cl.id, cl.nombre, cl.whatsapp, cl.email, cl.qr_token, cl.created_at,
@@ -239,6 +252,7 @@ staffRouter.get('/clientes', asyncHandler(async (req, res) => {
             (cl.password_hash IS NOT NULL) AS tiene_acceso,
             COALESCE(r.n, 0)::int AS reservas_total,
             COALESCE(a.n, 0)::int AS clases_tomadas,
+            a.primera_clase,
             r.ultima_fecha
      FROM clientes cl
      LEFT JOIN (
@@ -246,7 +260,7 @@ staffRouter.get('/clientes', asyncHandler(async (req, res) => {
        FROM reservas GROUP BY cliente_id
      ) r ON r.cliente_id = cl.id
      LEFT JOIN (
-       SELECT cliente_id, count(*) AS n
+       SELECT cliente_id, count(*) AS n, min(created_at) AS primera_clase
        FROM checkins GROUP BY cliente_id
      ) a ON a.cliente_id = cl.id
      ${filtro}

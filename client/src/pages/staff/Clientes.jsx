@@ -40,6 +40,9 @@ export default function Clientes() {
   const [nuevo, setNuevo] = useState(null); // null = formulario cerrado
   const [guardandoNuevo, setGuardandoNuevo] = useState(false);
   const [soloSinCuenta, setSoloSinCuenta] = useState(false);
+  const [campoFecha, setCampoFecha] = useState('registro'); // 'registro' | 'primera_clase'
+  const [fechaDesde, setFechaDesde] = useState('');
+  const [fechaHasta, setFechaHasta] = useState('');
   const [historialCliente, setHistorialCliente] = useState(null);
   const [historial, setHistorial] = useState([]);
   const [historialCargando, setHistorialCargando] = useState(false);
@@ -49,7 +52,11 @@ export default function Clientes() {
 
   function cargar() {
     setCargando(true);
-    const params = buscar.trim() ? `?buscar=${encodeURIComponent(buscar.trim())}` : '';
+    const qs = new URLSearchParams();
+    if (buscar.trim()) qs.set('buscar', buscar.trim());
+    if (fechaDesde) { qs.set('desde', fechaDesde); qs.set('campoFecha', campoFecha); }
+    if (fechaHasta) { qs.set('hasta', fechaHasta); qs.set('campoFecha', campoFecha); }
+    const params = qs.toString() ? `?${qs.toString()}` : '';
     apiGet(`/staff/clientes${params}`)
       .then((data) => { setClientes(data); setError(''); })
       .catch((err) => setError(err.message))
@@ -78,7 +85,7 @@ export default function Clientes() {
     const t = setTimeout(cargar, 250);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [buscar]);
+  }, [buscar, fechaDesde, fechaHasta, campoFecha]);
 
   async function crearAcceso(c) {
     const password = window.prompt(`Contraseña para ${c.nombre} (mínimo 4 caracteres) — el usuario para entrar es su WhatsApp: ${c.whatsapp}`);
@@ -236,6 +243,29 @@ export default function Clientes() {
         <span className={`chip ${soloSinCuenta ? 'active' : ''}`} onClick={() => setSoloSinCuenta(true)}>Sin cuenta todavía</span>
       </div>
 
+      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: 14 }}>
+        <div className="field" style={{ marginBottom: 0 }}>
+          <label htmlFor="campo-fecha">Filtrar por fecha de…</label>
+          <select id="campo-fecha" value={campoFecha} onChange={(e) => setCampoFecha(e.target.value)}>
+            <option value="registro">Registro</option>
+            <option value="primera_clase">Primera clase tomada</option>
+          </select>
+        </div>
+        <div className="field" style={{ marginBottom: 0 }}>
+          <label htmlFor="fecha-desde">Desde</label>
+          <input id="fecha-desde" type="date" value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} />
+        </div>
+        <div className="field" style={{ marginBottom: 0 }}>
+          <label htmlFor="fecha-hasta">Hasta</label>
+          <input id="fecha-hasta" type="date" value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} />
+        </div>
+        {(fechaDesde || fechaHasta) && (
+          <button className="btn btn-secondary" type="button" onClick={() => { setFechaDesde(''); setFechaHasta(''); }}>
+            Quitar filtro de fecha
+          </button>
+        )}
+      </div>
+
       {mensaje && <div className="alert success">{mensaje}</div>}
       {error && <div className="alert error">{error}</div>}
       {cargando && <div className="page-loading">Cargando…</div>}
@@ -320,6 +350,7 @@ export default function Clientes() {
                       <div><strong>Clases tomadas</strong><br /><span className="pill success">{c.clases_tomadas}</span></div>
                       <div><strong>Reservas</strong><br /><span className="pill accent">{c.reservas_total}</span></div>
                       <div><strong>Registrado</strong><br />{new Date(c.created_at).toLocaleDateString('es-MX')}</div>
+                      <div><strong>Primera clase</strong><br />{c.primera_clase ? new Date(c.primera_clase).toLocaleDateString('es-MX') : '—'}</div>
                       <div><strong>Cuenta</strong><br />{c.tiene_acceso ? <span className="pill success">tiene acceso</span> : <span className="pill warning">sin acceso</span>}</div>
                     </div>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', padding: '0 4px 10px' }}>
