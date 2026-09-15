@@ -2,6 +2,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { query, withTransaction } from '../db.js';
 import { asyncHandler } from '../asyncHandler.js';
+import { parseCumple } from '../cumpleanos.js';
 
 export const staffRouter = Router();
 
@@ -234,6 +235,7 @@ staffRouter.get('/clientes', asyncHandler(async (req, res) => {
 
   const { rows } = await query(
     `SELECT cl.id, cl.nombre, cl.whatsapp, cl.email, cl.qr_token, cl.created_at,
+            cl.cumple_mes, cl.cumple_dia,
             (cl.password_hash IS NOT NULL) AS tiene_acceso,
             COALESCE(r.n, 0)::int AS reservas_total,
             COALESCE(a.n, 0)::int AS clases_tomadas,
@@ -260,17 +262,19 @@ staffRouter.post('/clientes', asyncHandler(async (req, res) => {
   if (!['administrador', 'recepcion'].includes(req.staff.rol)) {
     return res.status(403).json({ error: 'No tienes permiso para esta acción.' });
   }
-  const { nombre, whatsapp, email, notasInternas } = req.body || {};
+  const { nombre, whatsapp, email, notasInternas, cumpleMes, cumpleDia } = req.body || {};
   if (!nombre?.trim() || !whatsapp?.trim()) {
     return res.status(400).json({ error: 'Nombre y WhatsApp son obligatorios.' });
   }
+  const cumple = parseCumple(cumpleMes, cumpleDia);
+  if (cumple.error) return res.status(400).json({ error: cumple.error });
 
   try {
     const { rows } = await query(
-      `INSERT INTO clientes (nombre, whatsapp, email, notas_internas)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO clientes (nombre, whatsapp, email, notas_internas, cumple_mes, cumple_dia)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING id, nombre, whatsapp, email, qr_token, created_at`,
-      [nombre.trim(), whatsapp.trim(), email?.trim() || null, notasInternas?.trim() || null]
+      [nombre.trim(), whatsapp.trim(), email?.trim() || null, notasInternas?.trim() || null, cumple.mes, cumple.dia]
     );
     res.status(201).json(rows[0]);
   } catch (err) {

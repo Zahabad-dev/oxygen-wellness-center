@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { apiGet, apiPost } from '../lib/apiClient.js';
 import PasswordInput from '../components/PasswordInput.jsx';
+import CumpleanosFields from '../components/CumpleanosFields.jsx';
 
 const money = (n) => `$${Number(n).toLocaleString('es-MX')}`;
 
@@ -9,7 +10,7 @@ export default function Membresia() {
   const navigate = useNavigate();
   const [membresias, setMembresias] = useState([]);
   const [membresiaId, setMembresiaId] = useState(null);
-  const [form, setForm] = useState({ nombre: '', whatsapp: '', email: '', password: '' });
+  const [form, setForm] = useState({ nombre: '', whatsapp: '', email: '', password: '', cumpleMes: null, cumpleDia: null });
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
 
@@ -80,6 +81,16 @@ export default function Membresia() {
           <label htmlFor="password">Crea una contraseña</label>
           <PasswordInput id="password" required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} autoComplete="new-password" />
         </div>
+        <CumpleanosFields
+          idPrefix="m-cumple"
+          mes={form.cumpleMes}
+          dia={form.cumpleDia}
+          onChangeMes={(cumpleMes) => setForm({ ...form, cumpleMes })}
+          onChangeDia={(cumpleDia) => setForm({ ...form, cumpleDia })}
+        />
+        <p style={{ fontSize: 12, color: 'var(--ink-faint)', marginTop: -8 }}>
+          Solo para avisarte con un detalle en tu cumpleaños — nunca pedimos el año.
+        </p>
         {error && <div className="alert error">{error}</div>}
         <button className="btn btn-primary btn-block" type="submit" disabled={enviando}>
           {enviando ? 'Creando tu cuenta…' : 'Registrarme y comprar membresía'}

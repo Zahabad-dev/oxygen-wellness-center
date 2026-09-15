@@ -4,9 +4,10 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { useTour } from '../../lib/useTour.js';
 import TourOverlay from '../../components/TourOverlay.jsx';
 import TourButton from '../../components/TourButton.jsx';
+import CumpleanosFields from '../../components/CumpleanosFields.jsx';
 
-const FORM_VACIO = { id: null, nombre: '', whatsapp: '', email: '', notasInternas: '', estado: 'activo' };
-const NUEVO_VACIO = { nombre: '', whatsapp: '', email: '', notasInternas: '' };
+const FORM_VACIO = { id: null, nombre: '', whatsapp: '', email: '', notasInternas: '', estado: 'activo', cumpleMes: null, cumpleDia: null };
+const NUEVO_VACIO = { nombre: '', whatsapp: '', email: '', notasInternas: '', cumpleMes: null, cumpleDia: null };
 const ESTADO_RESERVA_LABEL = { confirmada: 'success', lista_espera: 'warning', cancelada: 'critical' };
 
 const TOUR_STEPS = [
@@ -97,6 +98,8 @@ export default function Clientes() {
       email: data.email || '',
       notasInternas: data.notas_internas || '',
       estado: data.estado,
+      cumpleMes: data.cumple_mes,
+      cumpleDia: data.cumple_dia,
     });
   }
 
@@ -172,6 +175,13 @@ export default function Clientes() {
             <label htmlFor="n-notas">Notas internas (opcional)</label>
             <textarea id="n-notas" rows={2} value={nuevo.notasInternas} onChange={(e) => setNuevo({ ...nuevo, notasInternas: e.target.value })} />
           </div>
+          <CumpleanosFields
+            idPrefix="n-cumple"
+            mes={nuevo.cumpleMes}
+            dia={nuevo.cumpleDia}
+            onChangeMes={(cumpleMes) => setNuevo({ ...nuevo, cumpleMes })}
+            onChangeDia={(cumpleDia) => setNuevo({ ...nuevo, cumpleDia })}
+          />
           <div style={{ display: 'flex', gap: 10 }}>
             <button className="btn btn-primary" type="submit" disabled={guardandoNuevo}>Registrar</button>
             <button type="button" className="btn btn-secondary" onClick={() => setNuevo(null)}>Cancelar</button>
@@ -232,6 +242,13 @@ export default function Clientes() {
             <label htmlFor="e-notas">Notas internas</label>
             <textarea id="e-notas" rows={2} value={form.notasInternas} onChange={(e) => setForm({ ...form, notasInternas: e.target.value })} />
           </div>
+          <CumpleanosFields
+            idPrefix="e-cumple"
+            mes={form.cumpleMes}
+            dia={form.cumpleDia}
+            onChangeMes={(cumpleMes) => setForm({ ...form, cumpleMes })}
+            onChangeDia={(cumpleDia) => setForm({ ...form, cumpleDia })}
+          />
           <div style={{ display: 'flex', gap: 10 }}>
             <button className="btn btn-primary" type="submit">Guardar cambios</button>
             <button type="button" className="btn btn-secondary" onClick={() => setForm(null)}>Cancelar</button>
@@ -242,7 +259,7 @@ export default function Clientes() {
       <table className="responsive">
         <thead data-tour="clientes-columnas">
           <tr>
-            <th>Nombre</th><th>WhatsApp</th><th>Correo</th><th>Clases tomadas</th><th>Reservas</th><th>Registrado</th><th>Cuenta</th><th>Acciones</th>
+            <th>Nombre</th><th>WhatsApp</th><th>Correo</th><th>Cumpleaños</th><th>Clases tomadas</th><th>Reservas</th><th>Registrado</th><th>Cuenta</th><th>Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -251,6 +268,7 @@ export default function Clientes() {
               <td data-label="Nombre">{c.nombre}</td>
               <td data-label="WhatsApp">{c.whatsapp}</td>
               <td data-label="Correo">{c.email || '—'}</td>
+              <td data-label="Cumpleaños">{c.cumple_dia && c.cumple_mes ? `${String(c.cumple_dia).padStart(2, '0')}/${String(c.cumple_mes).padStart(2, '0')}` : '—'}</td>
               <td data-label="Clases tomadas"><span className="pill success">{c.clases_tomadas}</span></td>
               <td data-label="Reservas"><span className="pill accent">{c.reservas_total}</span></td>
               <td data-label="Registrado">{new Date(c.created_at).toLocaleDateString('es-MX')}</td>

@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import config from './config.js';
 import { query, withTransaction } from './db.js';
 import { asyncHandler } from './asyncHandler.js';
+import { parseCumple } from './cumpleanos.js';
 
 const whatsappRegex = /^[0-9+()\s-]{7,20}$/;
 
@@ -109,7 +110,7 @@ portalRouter.get('/membresias', asyncHandler(async (_req, res) => {
 // staff se la crea) y arranca con 1 clase de cortesía mientras se confirma el pago
 // en persona — el resto del saldo se libera cuando recepción/admin marca "pagado".
 portalRouter.post('/registrar-membresia', asyncHandler(async (req, res) => {
-  const { nombre, whatsapp, email, membresiaId, password } = req.body || {};
+  const { nombre, whatsapp, email, membresiaId, password, cumpleMes, cumpleDia } = req.body || {};
   if (!nombre?.trim() || !whatsapp?.trim() || !membresiaId) {
     return res.status(400).json({ error: 'Nombre, WhatsApp y membresía son obligatorios.' });
   }
@@ -119,6 +120,8 @@ portalRouter.post('/registrar-membresia', asyncHandler(async (req, res) => {
   if (!password || password.length < 4) {
     return res.status(400).json({ error: 'La contraseña debe tener al menos 4 caracteres.' });
   }
+  const cumple = parseCumple(cumpleMes, cumpleDia);
+  if (cumple.error) return res.status(400).json({ error: cumple.error });
 
   const resultado = await withTransaction(async (client) => {
     const { rows: membresiaRows } = await client.query(
@@ -140,13 +143,17 @@ portalRouter.post('/registrar-membresia', asyncHandler(async (req, res) => {
     const hash = await bcrypt.hash(password, 10);
     if (!cliente) {
       const inserted = await client.query(
-        `INSERT INTO clientes (nombre, whatsapp, email, password_hash) VALUES ($1, $2, $3, $4)
+        `INSERT INTO clientes (nombre, whatsapp, email, password_hash, cumple_mes, cumple_dia) VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING id, nombre, qr_token`,
-        [nombre.trim(), whatsapp.trim(), email?.trim() || null, hash]
+        [nombre.trim(), whatsapp.trim(), email?.trim() || null, hash, cumple.mes, cumple.dia]
       );
       cliente = inserted.rows[0];
     } else {
-      await client.query(`UPDATE clientes SET password_hash = $1 WHERE id = $2`, [hash, cliente.id]);
+      // No pisa un cumpleaños que ya tenía si esta vez lo dejó en blanco.
+      await client.query(
+        `UPDATE clientes SET password_hash = $1, cumple_mes = COALESCE($2, cumple_mes), cumple_dia = COALESCE($3, cumple_dia) WHERE id = $4`,
+        [hash, cumple.mes, cumple.dia, cliente.id]
+      );
     }
 
     const fechaFin = new Date();

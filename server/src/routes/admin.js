@@ -4,6 +4,7 @@ import config from '../config.js';
 import { query, withTransaction } from '../db.js';
 import { asyncHandler } from '../asyncHandler.js';
 import { uploadImage } from '../uploads.js';
+import { parseCumple } from '../cumpleanos.js';
 
 const ROLES_VALIDOS = ['administrador', 'recepcion', 'coach'];
 
@@ -363,7 +364,8 @@ adminRouter.delete('/usuarios/:id', asyncHandler(async (req, res) => {
 // ---------- Clientes: edicion y borrado completo (gateado por config.clientDataManagementEnabled) ----------
 adminRouter.get('/clientes/:id', asyncHandler(async (req, res) => {
   const { rows } = await query(
-    `SELECT id, nombre, whatsapp, email, notas_internas, estado, consentimiento_marketing, qr_token, created_at
+    `SELECT id, nombre, whatsapp, email, notas_internas, estado, consentimiento_marketing, qr_token, created_at,
+            cumple_mes, cumple_dia
      FROM clientes WHERE id = $1`,
     [req.params.id]
   );
@@ -375,7 +377,9 @@ adminRouter.put('/clientes/:id', asyncHandler(async (req, res) => {
   if (!config.clientDataManagementEnabled) {
     return res.status(403).json({ error: 'La edición completa de clientes está deshabilitada.' });
   }
-  const { nombre, whatsapp, email, notasInternas, estado, consentimientoMarketing } = req.body || {};
+  const { nombre, whatsapp, email, notasInternas, estado, consentimientoMarketing, cumpleMes, cumpleDia } = req.body || {};
+  const cumple = parseCumple(cumpleMes, cumpleDia);
+  if (cumple.error) return res.status(400).json({ error: cumple.error });
 
   try {
     const { rows } = await query(
@@ -385,10 +389,12 @@ adminRouter.put('/clientes/:id', asyncHandler(async (req, res) => {
          email = $3,
          notas_internas = $4,
          estado = COALESCE($5, estado),
-         consentimiento_marketing = COALESCE($6, consentimiento_marketing)
-       WHERE id = $7
+         consentimiento_marketing = COALESCE($6, consentimiento_marketing),
+         cumple_mes = $7,
+         cumple_dia = $8
+       WHERE id = $9
        RETURNING id`,
-      [nombre?.trim() || null, whatsapp?.trim() || null, email || null, notasInternas || null, estado || null, consentimientoMarketing, req.params.id]
+      [nombre?.trim() || null, whatsapp?.trim() || null, email || null, notasInternas || null, estado || null, consentimientoMarketing, cumple.mes, cumple.dia, req.params.id]
     );
     if (!rows[0]) return res.status(404).json({ error: 'Cliente no encontrado.' });
     res.json({ ok: true });
