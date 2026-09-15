@@ -137,8 +137,10 @@ export default function Clientes() {
   }
 
   function abrirFusion(c) {
-    setFusion({ origen: c, buscar: c.nombre, candidatos: [], cargando: true, fusionando: false });
-    buscarCandidatos(c.nombre);
+    // Se busca por WhatsApp, no por nombre: si el duplicado tiene un nombre distinto (ej. "Iliana
+    // Lazcano" vs "Iliana Mireya Lazcano Vázquez"), buscar por nombre nunca lo iba a encontrar.
+    setFusion({ origen: c, buscar: c.whatsapp, candidatos: [], cargando: true, fusionando: false });
+    buscarCandidatos(c.whatsapp);
   }
 
   function buscarCandidatos(texto) {
