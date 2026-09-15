@@ -130,6 +130,33 @@ export default function Catalogo() {
         </div>
       </section>
 
+      {/* ---------- Cómo funciona ---------- */}
+      <section className="disciplines">
+        <div className="section-inner">
+          <div className="section-head reveal">
+            <span className="eyebrow">Cómo funciona</span>
+            <h2>Tres pasos, sin complicarte</h2>
+          </div>
+          <div className="grid cols-3 reveal reveal-1">
+            <div className="card">
+              <h4>1. Reserva</h4>
+              <p>Elige tu clase en el calendario y deja tu nombre y WhatsApp — sin crear cuenta.</p>
+            </div>
+            <div className="card">
+              <h4>2. Recibe tu QR</h4>
+              <p>Es tuyo para siempre. Guárdalo, compártelo a tu WhatsApp o descárgalo.</p>
+            </div>
+            <div className="card">
+              <h4>3. Check-in</h4>
+              <p>Muéstralo en recepción al llegar — así de simple, cada vez que vengas, y la recepcionista hará la cuenta contigo para que recibas tus recompensas.</p>
+            </div>
+          </div>
+          <p className="reveal reveal-1" style={{ textAlign: 'center', marginTop: 18, color: 'var(--ink-soft)' }}>
+            ¿Ya nos conoces? Encarga tu membresía en el apartado de <a href="#membresias">Membresías</a>, más abajo en el sitio.
+          </p>
+        </div>
+      </section>
+
       {/* ---------- Destacados ---------- */}
       {destacados.length > 0 && (
         <section id="destacados" className="highlights">
@@ -403,30 +430,6 @@ export default function Catalogo() {
               <h4>Cuidemos el espacio</h4>
               <p>Al terminar tu clase, deja el equipo y tu área limpios y ordenados para la siguiente persona.
                 Cualquier daño al equipo o instalaciones repórtalo de inmediato en recepción.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ---------- Cómo funciona ---------- */}
-      <section className="disciplines">
-        <div className="section-inner">
-          <div className="section-head reveal">
-            <span className="eyebrow">Cómo funciona</span>
-            <h2>Tres pasos, sin complicarte</h2>
-          </div>
-          <div className="grid cols-3 reveal reveal-1">
-            <div className="card">
-              <h4>1. Reserva</h4>
-              <p>Elige tu clase en el calendario y deja tu nombre y WhatsApp — sin crear cuenta.</p>
-            </div>
-            <div className="card">
-              <h4>2. Recibe tu QR</h4>
-              <p>Es tuyo para siempre. Guárdalo, compártelo a tu WhatsApp o descárgalo.</p>
-            </div>
-            <div className="card">
-              <h4>3. Check-in</h4>
-              <p>Muéstralo en recepción al llegar — así de simple, cada vez que vengas.</p>
             </div>
           </div>
         </div>
