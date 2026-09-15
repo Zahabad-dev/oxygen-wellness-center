@@ -69,8 +69,10 @@ reservasRouter.post('/', async (req, res) => {
       } else {
         // La identidad del cliente es whatsapp + nombre, no solo el whatsapp: un mismo teléfono
         // puede pertenecer a varias personas de una misma familia (ej. mamá reservando para su hija).
+        // nombre_normalizado() ignora mayúsculas, acentos y espacios de más, para no crear un
+        // perfil duplicado si esta vez escribió "María" sin acento o con un espacio de más.
         const { rows: clienteRows } = await client.query(
-          `SELECT id, nombre, qr_token FROM clientes WHERE whatsapp = $1 AND lower(nombre) = lower($2)`,
+          `SELECT id, nombre, qr_token FROM clientes WHERE whatsapp = $1 AND nombre_normalizado(nombre) = nombre_normalizado($2)`,
           [whatsapp.trim(), nombre.trim()]
         );
         cliente = clienteRows[0];

@@ -43,6 +43,7 @@ export default function Clientes() {
   const [historialCliente, setHistorialCliente] = useState(null);
   const [historial, setHistorial] = useState([]);
   const [historialCargando, setHistorialCargando] = useState(false);
+  const [fusion, setFusion] = useState(null); // null = cerrado
   const tour = useTour('clientes', TOUR_STEPS);
 
   function cargar() {
@@ -132,6 +133,38 @@ export default function Clientes() {
       cargar();
     } catch (err) {
       alert(err.message);
+    }
+  }
+
+  function abrirFusion(c) {
+    setFusion({ origen: c, buscar: c.nombre, candidatos: [], cargando: true, fusionando: false });
+    buscarCandidatos(c.nombre);
+  }
+
+  function buscarCandidatos(texto) {
+    setFusion((f) => (f ? { ...f, buscar: texto, cargando: true } : f));
+    apiGet(`/staff/clientes?buscar=${encodeURIComponent(texto.trim())}`)
+      .then((data) => setFusion((f) => (f ? { ...f, candidatos: data, cargando: false } : f)))
+      .catch(() => setFusion((f) => (f ? { ...f, candidatos: [], cargando: false } : f)));
+  }
+
+  async function conservarEste(mantener) {
+    const grupo = [fusion.origen, ...fusion.candidatos.filter((c) => c.id !== fusion.origen.id)];
+    const otros = grupo.filter((c) => c.id !== mantener.id);
+    if (otros.length === 0) return;
+    if (!confirm(`Vas a conservar a "${mantener.nombre}" (${mantener.whatsapp}) y fusionar en él a: ${otros.map((o) => `"${o.nombre}" (${o.whatsapp})`).join(', ')}.\n\nSe combinan sus reservas, historial y datos — los perfiles fusionados se borran. No se puede deshacer. ¿Continuar?`)) return;
+
+    setFusion((f) => ({ ...f, fusionando: true }));
+    try {
+      for (const o of otros) {
+        await apiPost(`/admin/clientes/${mantener.id}/fusionar`, { eliminarId: o.id });
+      }
+      setMensaje(`Se fusionaron ${otros.length} perfil${otros.length === 1 ? '' : 'es'} en "${mantener.nombre}".`);
+      setFusion(null);
+      cargar();
+    } catch (err) {
+      alert(err.message);
+      setFusion((f) => ({ ...f, fusionando: false }));
     }
   }
 
@@ -281,6 +314,7 @@ export default function Clientes() {
                 {esAdmin && (
                   <>
                     <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => editar(c)}>Editar</button>
+                    <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => abrirFusion(c)}>Fusionar duplicado</button>
                     <button className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: 12.5, color: 'var(--critical)' }} onClick={() => borrar(c)}>Borrar</button>
                   </>
                 )}
@@ -323,6 +357,60 @@ export default function Clientes() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {fusion && (
+        <div className="modal-backdrop" onClick={() => !fusion.fusionando && setFusion(null)}>
+          <div className="modal-panel" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 560 }}>
+            <button className="modal-close" onClick={() => setFusion(null)} aria-label="Cerrar" disabled={fusion.fusionando}>✕</button>
+            <h3 style={{ marginTop: 0 }}>Fusionar duplicados</h3>
+            <p style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
+              Busca los perfiles que crees que son la misma persona (por nombre o WhatsApp) y elige cuál conservar —
+              los demás se fusionan en él (se combinan sus reservas e historial) y se borran. No se puede deshacer.
+            </p>
+            <div className="field">
+              <label htmlFor="fusion-buscar">Buscar por nombre o WhatsApp</label>
+              <input
+                id="fusion-buscar"
+                value={fusion.buscar}
+                onChange={(e) => buscarCandidatos(e.target.value)}
+                disabled={fusion.fusionando}
+              />
+            </div>
+
+            {fusion.cargando && <div className="page-loading">Buscando…</div>}
+
+            {!fusion.cargando && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 360, overflowY: 'auto' }}>
+                {[fusion.origen, ...fusion.candidatos.filter((c) => c.id !== fusion.origen.id)].map((c) => (
+                  <div
+                    key={c.id}
+                    style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8,
+                      border: c.id === fusion.origen.id ? '1px solid var(--accent)' : '1px solid var(--line)',
+                      borderRadius: 'var(--radius-sm)', padding: '8px 12px',
+                    }}
+                  >
+                    <span>
+                      <strong>{c.nombre}</strong> · {c.whatsapp}
+                      {c.id === fusion.origen.id && <span className="pill accent" style={{ marginLeft: 6 }}>este</span>}
+                      <br />
+                      <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>
+                        {c.tiene_acceso ? 'tiene acceso' : 'sin acceso'} · {c.reservas_total ?? '—'} reservas · registrado {new Date(c.created_at).toLocaleDateString('es-MX')}
+                      </span>
+                    </span>
+                    <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => conservarEste(c)} disabled={fusion.fusionando}>
+                      Conservar este
+                    </button>
+                  </div>
+                ))}
+                {fusion.candidatos.filter((c) => c.id !== fusion.origen.id).length === 0 && (
+                  <p style={{ color: 'var(--ink-soft)', fontSize: 13.5 }}>No se encontró ningún otro perfil parecido — puede que no haya duplicado.</p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

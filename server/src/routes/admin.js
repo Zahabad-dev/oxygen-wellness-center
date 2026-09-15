@@ -414,6 +414,76 @@ adminRouter.delete('/clientes/:id', asyncHandler(async (req, res) => {
   res.json({ ok: true });
 }));
 
+// ---------- Fusionar dos perfiles de cliente duplicados en uno solo ----------
+// Mueve reservas/checkins/pagos/etc. del que se borra hacia el que se conserva, completa
+// los datos del que se conserva con lo que le falte, y borra el duplicado. Pensado para
+// casos como "María" y "Maria" (mismo WhatsApp) o el mismo WhatsApp escrito con un dígito
+// mal (typo) bajo el mismo nombre — el admin decide cuál de los dos es el bueno.
+adminRouter.post('/clientes/:mantenerId/fusionar', asyncHandler(async (req, res) => {
+  const { mantenerId } = req.params;
+  const { eliminarId } = req.body || {};
+  if (!eliminarId) return res.status(400).json({ error: 'Falta el cliente a fusionar.' });
+  if (String(eliminarId) === String(mantenerId)) {
+    return res.status(400).json({ error: 'No puedes fusionar un cliente consigo mismo.' });
+  }
+
+  const resultado = await withTransaction(async (client) => {
+    const { rows: clientesRows } = await client.query(
+      `SELECT id, email, notas_internas, password_hash, cumple_mes, cumple_dia, nombre
+       FROM clientes WHERE id IN ($1, $2) FOR UPDATE`,
+      [mantenerId, eliminarId]
+    );
+    const mantener = clientesRows.find((c) => String(c.id) === String(mantenerId));
+    const eliminar = clientesRows.find((c) => String(c.id) === String(eliminarId));
+    if (!mantener || !eliminar) {
+      const err = new Error('No se encontró alguno de los dos clientes.');
+      err.status = 404;
+      throw err;
+    }
+
+    // Reservas: evita chocar con la restricción UNIQUE(clase_id, cliente_id) si ambos
+    // perfiles alcanzaron a reservar la misma clase por separado — esas se descartan.
+    await client.query(
+      `UPDATE reservas SET cliente_id = $1
+       WHERE cliente_id = $2
+         AND NOT EXISTS (SELECT 1 FROM reservas r2 WHERE r2.clase_id = reservas.clase_id AND r2.cliente_id = $1)`,
+      [mantenerId, eliminarId]
+    );
+    await client.query(`DELETE FROM reservas WHERE cliente_id = $1`, [eliminarId]);
+
+    await client.query(`UPDATE checkins SET cliente_id = $1 WHERE cliente_id = $2`, [mantenerId, eliminarId]);
+    await client.query(`UPDATE suscripciones SET cliente_id = $1 WHERE cliente_id = $2`, [mantenerId, eliminarId]);
+    await client.query(`UPDATE movimientos_saldo SET cliente_id = $1 WHERE cliente_id = $2`, [mantenerId, eliminarId]);
+    await client.query(`UPDATE pagos SET cliente_id = $1 WHERE cliente_id = $2`, [mantenerId, eliminarId]);
+    await client.query(`UPDATE redenciones SET cliente_id = $1 WHERE cliente_id = $2`, [mantenerId, eliminarId]);
+    await client.query(
+      `UPDATE notificaciones SET destinatario_id = $1 WHERE destinatario_tipo = 'cliente' AND destinatario_id = $2`,
+      [mantenerId, eliminarId]
+    );
+    await client.query(
+      `UPDATE historial SET actor_id = $1 WHERE actor_tipo = 'cliente' AND actor_id = $2`,
+      [mantenerId, eliminarId]
+    );
+
+    await client.query(
+      `UPDATE clientes SET
+         email = COALESCE(email, $2),
+         notas_internas = COALESCE(notas_internas, $3),
+         password_hash = COALESCE(password_hash, $4),
+         cumple_mes = COALESCE(cumple_mes, $5),
+         cumple_dia = COALESCE(cumple_dia, $6)
+       WHERE id = $1`,
+      [mantenerId, eliminar.email, eliminar.notas_internas, eliminar.password_hash, eliminar.cumple_mes, eliminar.cumple_dia]
+    );
+
+    await client.query(`DELETE FROM clientes WHERE id = $1`, [eliminarId]);
+
+    return { nombre: mantener.nombre };
+  });
+
+  res.json({ ok: true, nombre: resultado.nombre });
+}));
+
 // ---------- Recompensa por lealtad: una sola regla editable (cada N clases → una recompensa) ----------
 adminRouter.get('/recompensa', asyncHandler(async (_req, res) => {
   let { rows } = await query(

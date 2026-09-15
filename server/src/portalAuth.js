@@ -136,7 +136,7 @@ portalRouter.post('/registrar-membresia', asyncHandler(async (req, res) => {
     }
 
     let { rows: clienteRows } = await client.query(
-      `SELECT id, nombre, qr_token FROM clientes WHERE whatsapp = $1 AND lower(nombre) = lower($2)`,
+      `SELECT id, nombre, qr_token FROM clientes WHERE whatsapp = $1 AND nombre_normalizado(nombre) = nombre_normalizado($2)`,
       [whatsapp.trim(), nombre.trim()]
     );
     let cliente = clienteRows[0];
