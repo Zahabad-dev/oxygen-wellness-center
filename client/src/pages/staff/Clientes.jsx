@@ -134,6 +134,16 @@ export default function Clientes() {
       .finally(() => setHistorialCargando(false));
   }
 
+  async function cambiarAsistencia(r, asistio) {
+    try {
+      await apiPut(`/admin/reservas/${r.reserva_id}/asistencia`, { asistio });
+      verHistorial(historialCliente);
+      cargar();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
   async function borrar(c) {
     if (!confirm(`¿Borrar por completo a ${c.nombre}? Esto también borra su historial de reservas y check-ins. No se puede deshacer.`)) return;
     try {
@@ -401,8 +411,20 @@ export default function Clientes() {
                   <span>
                     <strong>{r.fecha}</strong> {r.hora_inicio?.slice(0, 5)} · {r.disciplina_nombre} · {r.coach_nombre}
                   </span>
-                  <span className={`pill ${r.asistio ? 'success' : ESTADO_RESERVA_LABEL[r.estado] || 'accent'}`}>
-                    {r.asistio ? 'asistió' : r.estado === 'lista_espera' ? `espera Nº${r.posicion_espera}` : r.estado}
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span className={`pill ${r.asistio ? 'success' : ESTADO_RESERVA_LABEL[r.estado] || 'accent'}`}>
+                      {r.asistio ? 'asistió' : r.estado === 'lista_espera' ? `espera Nº${r.posicion_espera}` : r.estado}
+                    </span>
+                    {esAdmin && r.estado !== 'cancelada' && (
+                      <button
+                        className="btn btn-secondary"
+                        style={{ padding: '3px 8px', fontSize: 11.5 }}
+                        onClick={() => cambiarAsistencia(r, !r.asistio)}
+                        title={r.asistio ? 'Quitar la marca de asistencia' : 'Marcar como clase tomada'}
+                      >
+                        {r.asistio ? 'Quitar asistencia' : 'Marcar asistió'}
+                      </button>
+                    )}
                   </span>
                 </div>
               ))}

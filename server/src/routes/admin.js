@@ -228,6 +228,37 @@ adminRouter.get('/clases/:id/reservas', asyncHandler(async (req, res) => {
   res.json(rows);
 }));
 
+// ---------- Corregir asistencia a mano (recepción olvidó pasar el QR, o lo marcó por error) ----------
+adminRouter.put('/reservas/:id/asistencia', asyncHandler(async (req, res) => {
+  const { asistio } = req.body || {};
+  const { rows } = await query(`SELECT id, cliente_id, estado FROM reservas WHERE id = $1`, [req.params.id]);
+  const reserva = rows[0];
+  if (!reserva) return res.status(404).json({ error: 'Reserva no encontrada.' });
+
+  await withTransaction(async (client) => {
+    if (asistio) {
+      const { rows: existe } = await client.query(`SELECT id FROM checkins WHERE reserva_id = $1`, [req.params.id]);
+      if (!existe[0]) {
+        await client.query(
+          `INSERT INTO checkins (reserva_id, cliente_id, metodo, validaciones) VALUES ($1, $2, 'manual', '{"editado_por_admin": true}'::jsonb)`,
+          [req.params.id, reserva.cliente_id]
+        );
+      }
+      await client.query(`UPDATE reservas SET estado = 'asistio' WHERE id = $1`, [req.params.id]);
+    } else {
+      await client.query(`DELETE FROM checkins WHERE reserva_id = $1`, [req.params.id]);
+      await client.query(`UPDATE reservas SET estado = 'confirmada' WHERE id = $1 AND estado = 'asistio'`, [req.params.id]);
+    }
+    await client.query(
+      `INSERT INTO historial (entidad, entidad_id, accion, actor_tipo, actor_id, detalle)
+       VALUES ('reserva', $1, $2, 'staff', $3, $4::jsonb)`,
+      [req.params.id, asistio ? 'asistencia_marcada_manual' : 'asistencia_quitada_manual', req.staff.id, JSON.stringify({ clienteId: reserva.cliente_id })]
+    );
+  });
+
+  res.json({ ok: true });
+}));
+
 adminRouter.post('/clases', asyncHandler(async (req, res) => {
   const { disciplinaId, coachId, salonId, fecha, horaInicio, duracionMinutos, capacidadMaxima, nivel, descripcion } = req.body || {};
   if (!disciplinaId || !coachId || !salonId || !fecha || !horaInicio || !capacidadMaxima) {
