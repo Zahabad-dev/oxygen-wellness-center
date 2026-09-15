@@ -71,7 +71,7 @@ staffRouter.post('/pagos/:id/confirmar', asyncHandler(async (req, res) => {
     );
     const suscripcion = suscripcionRows[0];
 
-    // Ya se otorgó 1 clase de cortesía al registrarse — aquí se libera el resto.
+    // Ya se liberó su primera clase (de la membresía, no una cortesía) al registrarse — aquí se libera el resto.
     const restante = Math.max(0, suscripcion.clases_incluidas - 1);
     if (restante > 0) {
       await client.query(

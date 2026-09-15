@@ -107,8 +107,9 @@ portalRouter.get('/membresias', asyncHandler(async (_req, res) => {
 
 // Autoregistro + compra de membresía: misma identidad cliente que una reserva normal
 // (whatsapp + nombre), pero además define su propia contraseña de portal (nadie de
-// staff se la crea) y arranca con 1 clase de cortesía mientras se confirma el pago
-// en persona — el resto del saldo se libera cuando recepción/admin marca "pagado".
+// staff se la crea) y se le libera de una vez su primera clase — ya es parte de la
+// membresía que está comprando, no una cortesía aparte — mientras se confirma el pago
+// en persona; el resto del saldo se libera cuando recepción/admin marca "pagado".
 portalRouter.post('/registrar-membresia', asyncHandler(async (req, res) => {
   const { nombre, whatsapp, email, membresiaId, password, cumpleMes, cumpleDia } = req.body || {};
   if (!nombre?.trim() || !whatsapp?.trim() || !membresiaId) {
@@ -171,11 +172,11 @@ portalRouter.post('/registrar-membresia', asyncHandler(async (req, res) => {
       [cliente.id, `Membresía ${membresia.nombre}`, suscripcionId, membresia.precio]
     );
 
-    const cortesia = Math.min(1, membresia.clases_incluidas);
+    const primeraClase = Math.min(1, membresia.clases_incluidas);
     await client.query(
       `INSERT INTO movimientos_saldo (cliente_id, tipo, cantidad, referencia_tipo, referencia_id, fecha_expiracion)
        VALUES ($1, 'compra', $2, 'paquete', $3, $4)`,
-      [cliente.id, cortesia, suscripcionId, fechaFin.toISOString().slice(0, 10)]
+      [cliente.id, primeraClase, suscripcionId, fechaFin.toISOString().slice(0, 10)]
     );
 
     await client.query(

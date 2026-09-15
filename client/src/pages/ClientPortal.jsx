@@ -60,7 +60,8 @@ export default function ClientPortal() {
           {membresia.pagoPendiente && (
             <div className="alert warning" style={{ fontSize: 12.5, margin: 0 }}>
               Tu membresía "{membresia.pagoPendiente.membresia_nombre}" está pendiente de confirmar en recepción —
-              mientras tanto solo cuentas con tu clase de cortesía.
+              mientras tanto ya puedes tomar tu primera clase, que sí es parte de tu membresía; el resto del paquete
+              se libera en cuanto confirmes tu pago ahí.
             </div>
           )}
         </div>

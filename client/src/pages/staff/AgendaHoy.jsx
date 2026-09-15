@@ -185,7 +185,7 @@ export default function AgendaHoy() {
 
       {pagosPendientes.length > 0 && (
         <div className="alert warning" style={{ marginBottom: 18 }}>
-          <strong>Membresías por confirmar pago:</strong> {pagosPendientes.length === 1 ? '1 clienta' : `${pagosPendientes.length} clientas`} se registró en línea y solo tiene 1 clase de cortesía hasta que confirmes que ya pagó.
+          <strong>Membresías por confirmar pago:</strong> {pagosPendientes.length === 1 ? '1 clienta' : `${pagosPendientes.length} clientas`} se registró en línea y solo tiene liberada su primera clase (ya es parte de su membresía, no es una cortesía aparte) — cóbrale en persona y márcalo aquí para liberarle el resto del paquete.
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
             {pagosPendientes.map((p) => (
               <div key={p.pago_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', padding: '8px 12px' }}>
