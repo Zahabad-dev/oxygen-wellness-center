@@ -8,22 +8,24 @@
   --ink: #221b14;
   --ink-soft: #6b6055;
   --ink-faint: #9c9186;
-  --accent: #4a2f1f;
+  --accent: #4c2e22;
   --on-accent: #fbf4e8;
-  --accent-ink: #6b4226;
-  --accent-soft: #efe6d4;
-  --gold: #ab8a52;
-  --gold-soft: #f1e6cf;
-  --success: #6b8a5a;
-  --warning: #b8862e;
-  --critical: #a3503f;
-  --info: #6e7f95;
+  --accent-ink: #6f3f22;
+  --accent-soft: #ece5d2;
+  --gold: #ad8752;
+  --gold-soft: #f0e3cd;
+  --success: #6f8a5f;
+  --warning: #b8853a;
+  --critical: #9c4a35;
+  --info: #7c7d68;
 
-  /* Colores por disciplina — categórica, cálida, no choca con el acento */
-  --d-functional: #b0653f;
-  --d-pilates: #7a5c7e;
-  --d-sculpt: #8a5c42;
-  --d-baile: #a8433a;
+  /* Colores por disciplina — solo respaldo si a una disciplina le falta color propio en la
+     base de datos; en uso normal manda el color que se define en Admin > Disciplinas.
+     Alineados a la paleta oliva/salvia + terracota/camel del estudio. */
+  --d-functional: #8b3a1e;
+  --d-pilates: #818c68;
+  --d-sculpt: #bf8657;
+  --d-baile: #454935;
 
   --radius: 14px;
   --radius-sm: 9px;
