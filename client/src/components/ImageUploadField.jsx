@@ -3,7 +3,7 @@ import { apiUpload } from '../lib/apiClient.js';
 
 // Campo de imagen para paneles de Admin: subida directa (drag/click) que guarda el archivo
 // en el servidor y llena el campo de URL solo — sigue permitiendo pegar una ruta a mano.
-export default function ImageUploadField({ id, label, value, onChange, previewHeight = 160 }) {
+export default function ImageUploadField({ id, label, value, onChange, previewHeight = 160, hint }) {
   const [subiendo, setSubiendo] = useState(false);
   const [error, setError] = useState('');
 
@@ -26,6 +26,7 @@ export default function ImageUploadField({ id, label, value, onChange, previewHe
   return (
     <div className="field">
       <label htmlFor={id}>{label}</label>
+      {hint && <p style={{ fontSize: 12, color: 'var(--ink-faint)', margin: '0 0 6px' }}>{hint}</p>}
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         <input id={id} value={value} onChange={(e) => onChange(e.target.value)} placeholder="/images/… o sube una foto" style={{ flex: 1, minWidth: 180 }} />
         <label className="btn btn-secondary" style={{ margin: 0, cursor: 'pointer' }}>

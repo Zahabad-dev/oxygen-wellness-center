@@ -86,6 +86,7 @@ export default function Coaches() {
           label="Foto del coach (opcional)"
           value={form.fotoUrl}
           onChange={(fotoUrl) => setForm({ ...form, fotoUrl })}
+          hint="Medida recomendada: vertical, mínimo 900×1200 px (proporción 3:4)."
         />
         <div className="field">
           <label>Disciplinas que imparte</label>

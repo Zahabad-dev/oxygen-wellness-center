@@ -36,12 +36,15 @@ const HERO_FALLBACK = {
   ctaTexto: 'Reservar',
 };
 
+const ACTIVIDAD_MES_FALLBACK = { activo: false };
+
 export default function Catalogo() {
   const [disciplinas, setDisciplinas] = useState([]);
   const [coaches, setCoaches] = useState([]);
   const [destacados, setDestacados] = useState([]);
   const [clases, setClases] = useState([]);
   const [hero, setHero] = useState(HERO_FALLBACK);
+  const [actividadMes, setActividadMes] = useState(ACTIVIDAD_MES_FALLBACK);
   const [disciplinaId, setDisciplinaId] = useState(null);
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(true);
@@ -54,6 +57,7 @@ export default function Catalogo() {
     apiGet('/coaches').then(setCoaches).catch(() => {});
     apiGet('/destacados').then(setDestacados).catch(() => {});
     apiGet('/contenido/hero').then(setHero).catch(() => {});
+    apiGet('/contenido/actividad-mes').then(setActividadMes).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -75,6 +79,12 @@ export default function Catalogo() {
     ...d,
     clases: clases.filter((c) => c.fecha === d.iso).sort((a, b) => a.hora_inicio.localeCompare(b.hora_inicio)),
   }));
+
+  // Color por nombre de disciplina: el que se define en Admin > Disciplinas manda en TODO
+  // el sitio (burbujas de coach, puntos del calendario, franjas, horario) — antes cada parte
+  // usaba su propio color fijo en el código y no se veían uniformes entre sí.
+  const colorPorNombre = Object.fromEntries(disciplinas.map((d) => [d.nombre, d.color]));
+  const colorDe = (nombre) => colorPorNombre[nombre] || disciplineTheme(nombre).color;
 
   // Parallax sutil del hero + aparición de secciones al hacer scroll.
   useEffect(() => {
@@ -213,7 +223,7 @@ export default function Catalogo() {
                     decoding="async"
                   />
                   <div className="discipline-tile-overlay">
-                    <span className="coach-pill" style={{ '--pill-color': theme.color }}>{d.nombre}</span>
+                    <span className="coach-pill" style={{ '--pill-color': colorDe(d.nombre) }}>{d.nombre}</span>
                   </div>
                 </button>
               );
@@ -240,7 +250,7 @@ export default function Catalogo() {
                 className={`chip ${disciplinaId === d.id ? 'active' : ''}`}
                 onClick={() => setDisciplinaId(disciplinaId === d.id ? null : d.id)}
               >
-                <span className="disc-dot" style={{ background: disciplineTheme(d.nombre).color, marginRight: 6 }} />
+                <span className="disc-dot" style={{ background: colorDe(d.nombre), marginRight: 6 }} />
                 {d.nombre}
               </span>
             ))}
@@ -263,8 +273,7 @@ export default function Catalogo() {
                   <div className="week-day-slots">
                     {d.clases.length === 0 && <span className="week-day-empty">—</span>}
                     {d.clases.map((c) => {
-                      const theme = disciplineTheme(c.disciplina_nombre);
-                      const color = c.disciplina_color || theme.color;
+                      const color = c.disciplina_color || colorDe(c.disciplina_nombre);
                       const lleno = c.cupoDisponible <= 0;
                       return (
                         <button
@@ -309,7 +318,7 @@ export default function Catalogo() {
                     <span className="coach-name">{co.nombre}</span>
                     <div className="coach-pills">
                       {co.disciplinas.map((d) => (
-                        <span key={d} className="coach-pill" style={{ '--pill-color': disciplineTheme(d).color }}>{d}</span>
+                        <span key={d} className="coach-pill" style={{ '--pill-color': colorDe(d) }}>{d}</span>
                       ))}
                     </div>
                   </div>
@@ -335,9 +344,8 @@ export default function Catalogo() {
                 <div className="schedule-day-name">{dia}</div>
                 <div className="schedule-slots">
                   {horas.map(([hora, disc]) => {
-                    const theme = disciplineTheme(disc);
                     return (
-                      <div key={hora + disc} className="schedule-slot" style={{ '--slot-color': theme.color }}>
+                      <div key={hora + disc} className="schedule-slot" style={{ '--slot-color': colorDe(disc) }}>
                         <span className="schedule-hora">{hora}</span>
                         <span className="schedule-disc">{disc}</span>
                       </div>
@@ -381,22 +389,32 @@ export default function Catalogo() {
         </div>
       </section>
 
-      {/* ---------- Comunidad ---------- */}
-      <section className="community">
-        <span className="blob" aria-hidden="true" />
-        <div className="section-inner">
-          <img className="reveal" src="/images/comunidad.jpg" alt="Comunidad de Oxigen Wellness Center entrenando en grupo" loading="lazy" decoding="async" />
-          <div className="reveal reveal-1">
-            <span className="eyebrow">Comunidad</span>
-            <h2>Aquí nadie entrena en soledad.</h2>
-            <blockquote>“Un espacio para cuidarte, a tu propio movimiento, en comunidad.”</blockquote>
-            <p style={{ color: 'var(--ink-soft)' }}>
-              En Oxigen creemos que cada cuerpo tiene su propio proceso. Nuestros coaches te acompañan
-              desde tu primera clase — sin presión, sin comparaciones, con técnica y calidez.
-            </p>
+      {/* ---------- Actividad del mes (editable en Admin > Contenido; oculta si no está activa) ---------- */}
+      {actividadMes.activo && (
+        <section className="community">
+          <span className="blob" aria-hidden="true" />
+          <div className="section-inner">
+            <img className="reveal" src={actividadMes.imagenUrl} alt={actividadMes.titulo} loading="lazy" decoding="async" />
+            <div className="reveal reveal-1">
+              <span className="eyebrow">Actividad del mes</span>
+              <h2>{actividadMes.titulo}</h2>
+              {(actividadMes.dia || actividadMes.hora) && (
+                <p style={{ fontWeight: 600, color: 'var(--accent-ink)', margin: '0 0 10px' }}>
+                  {[actividadMes.dia, actividadMes.hora].filter(Boolean).join(' · ')}
+                </p>
+              )}
+              {actividadMes.descripcion && (
+                <p style={{ color: 'var(--ink-soft)', marginBottom: actividadMes.whatsapp ? 20 : 0 }}>{actividadMes.descripcion}</p>
+              )}
+              {actividadMes.whatsapp && (
+                <a className="btn btn-primary" href={waLink(actividadMes.whatsapp, actividadMes.mensaje || '')} target="_blank" rel="noreferrer">
+                  {actividadMes.ctaTexto || 'Reservar mi lugar'}
+                </a>
+              )}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ---------- Políticas ---------- */}
       <section id="politicas" className="calendar-section">

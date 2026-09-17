@@ -65,6 +65,7 @@ export default function Disciplinas() {
             label="Foto de la disciplina"
             value={form.imagenUrl}
             onChange={(imagenUrl) => setForm({ ...form, imagenUrl })}
+            hint="Medida recomendada: vertical, mínimo 900×1200 px (proporción 3:4)."
           />
           <div className="field">
             <label htmlFor="color">Color (para el calendario)</label>

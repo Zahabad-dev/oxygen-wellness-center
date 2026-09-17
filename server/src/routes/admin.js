@@ -95,6 +95,49 @@ adminRouter.put('/contenido/hero', asyncHandler(async (req, res) => {
   res.json(valor);
 }));
 
+// ---------- Contenido del sitio: actividad especial del mes (reemplaza la sección "Comunidad" fija) ----------
+const ACTIVIDAD_MES_DEFAULT = {
+  activo: false,
+  imagenUrl: '',
+  titulo: '',
+  dia: '',
+  hora: '',
+  descripcion: '',
+  whatsapp: '',
+  mensaje: '',
+  ctaTexto: 'Reservar mi lugar',
+};
+
+adminRouter.get('/contenido/actividad-mes', asyncHandler(async (_req, res) => {
+  const { rows } = await query(`SELECT valor FROM configuracion_general WHERE clave = 'sitio_actividad_mes'`);
+  res.json({ ...ACTIVIDAD_MES_DEFAULT, ...(rows[0]?.valor || {}) });
+}));
+
+adminRouter.put('/contenido/actividad-mes', asyncHandler(async (req, res) => {
+  const { activo, imagenUrl, titulo, dia, hora, descripcion, whatsapp, mensaje, ctaTexto } = req.body || {};
+  if (activo && (!imagenUrl?.trim() || !titulo?.trim())) {
+    return res.status(400).json({ error: 'Para activarla, la imagen y el título son obligatorios.' });
+  }
+  const valor = {
+    activo: Boolean(activo),
+    imagenUrl: imagenUrl?.trim() || '',
+    titulo: titulo?.trim() || '',
+    dia: dia?.trim() || '',
+    hora: hora?.trim() || '',
+    descripcion: descripcion?.trim() || '',
+    whatsapp: whatsapp?.trim() || '',
+    mensaje: mensaje?.trim() || '',
+    ctaTexto: ctaTexto?.trim() || 'Reservar mi lugar',
+  };
+  await query(
+    `INSERT INTO configuracion_general (clave, valor, descripcion)
+     VALUES ('sitio_actividad_mes', $1::jsonb, 'Actividad especial del mes que reemplaza la seccion Comunidad del landing')
+     ON CONFLICT (clave) DO UPDATE SET valor = $1::jsonb`,
+    [JSON.stringify(valor)]
+  );
+  res.json(valor);
+}));
+
 // ---------- Disciplinas: color y foto que se muestran en el landing (nombre/orden son fijos) ----------
 adminRouter.get('/disciplinas', asyncHandler(async (_req, res) => {
   const { rows } = await query(

@@ -228,7 +228,7 @@ thead th { font-family: var(--font-mono); font-size: 10.5px; text-transform: upp
 
 .landing section { padding: clamp(48px, 8vw, 96px) clamp(18px, 5vw, 56px); }
 .section-inner { max-width: 1080px; margin: 0 auto; }
-.section-head { max-width: 640px; margin: 0 0 32px; }
+.section-head { max-width: 640px; margin: 0 0 32px; position: relative; z-index: 1; }
 .section-head.center { margin-left: auto; margin-right: auto; text-align: center; }
 .section-head h2 { font-size: clamp(26px, 3.4vw, 36px); }
 .section-head p { color: var(--ink-soft); }

@@ -16,6 +16,23 @@ catalogoRouter.get('/contenido/hero', asyncHandler(async (_req, res) => {
   res.json({ ...HERO_DEFAULT, ...(rows[0]?.valor || {}) });
 }));
 
+const ACTIVIDAD_MES_DEFAULT = {
+  activo: false,
+  imagenUrl: '',
+  titulo: '',
+  dia: '',
+  hora: '',
+  descripcion: '',
+  whatsapp: '',
+  mensaje: '',
+  ctaTexto: 'Reservar mi lugar',
+};
+
+catalogoRouter.get('/contenido/actividad-mes', asyncHandler(async (_req, res) => {
+  const { rows } = await query(`SELECT valor FROM configuracion_general WHERE clave = 'sitio_actividad_mes'`);
+  res.json({ ...ACTIVIDAD_MES_DEFAULT, ...(rows[0]?.valor || {}) });
+}));
+
 catalogoRouter.get('/disciplinas', asyncHandler(async (_req, res) => {
   const { rows } = await query(
     `SELECT id, nombre, color, descripcion, imagen_url FROM disciplinas WHERE activo = true ORDER BY nombre`

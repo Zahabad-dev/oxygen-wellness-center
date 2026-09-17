@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { apiGet, apiPost, apiPut, apiDelete } from '../../lib/apiClient.js';
 import AdminNav from '../../components/AdminNav.jsx';
+import ImageUploadField from '../../components/ImageUploadField.jsx';
 
 const FORM_VACIO = { id: null, titulo: '', subtitulo: '', fechas: '', imagenUrl: '', whatsapp: '', mensaje: '', orden: 0, activo: true };
 
@@ -63,8 +64,6 @@ export default function Destacados() {
 
       <p style={{ color: 'var(--ink-soft)', maxWidth: 560 }}>
         Eventos y talleres especiales que aparecen en el carrusel del inicio, entre el hero y las disciplinas.
-        La imagen debe existir ya en el sitio (ej. súbela primero a <code>client/public/images/eventos/</code>
-        y aquí pon su ruta, como <code>/images/eventos/mi-evento.jpg</code>).
       </p>
 
       <form onSubmit={onSubmit} className="card" style={{ marginBottom: 24, maxWidth: 560 }}>
@@ -81,10 +80,13 @@ export default function Destacados() {
           <label htmlFor="fechas">Fechas (opcional)</label>
           <input id="fechas" value={form.fechas} onChange={(e) => setForm({ ...form, fechas: e.target.value })} placeholder="Ej. 25 y 26 de julio · Certificación de 1 día" />
         </div>
-        <div className="field">
-          <label htmlFor="imagenUrl">Ruta de la imagen</label>
-          <input id="imagenUrl" required value={form.imagenUrl} onChange={(e) => setForm({ ...form, imagenUrl: e.target.value })} placeholder="/images/eventos/mi-evento.jpg" />
-        </div>
+        <ImageUploadField
+          id="imagenUrl"
+          label="Imagen del destacado"
+          value={form.imagenUrl}
+          onChange={(imagenUrl) => setForm({ ...form, imagenUrl })}
+          hint="Medida recomendada: vertical, mínimo 900×1200 px (proporción 3:4)."
+        />
         <div className="field">
           <label htmlFor="whatsapp">WhatsApp para reservar (opcional)</label>
           <input id="whatsapp" value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} placeholder="527352491512" />
