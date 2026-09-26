@@ -138,6 +138,53 @@ adminRouter.put('/contenido/actividad-mes', asyncHandler(async (req, res) => {
   res.json(valor);
 }));
 
+// ---------- Membresías: precios y paquetes (los que ve el landing y el registro). No se borran:
+// las suscripciones y pagos ya hechos las referencian, así que se desactivan. ----------
+adminRouter.get('/membresias', asyncHandler(async (_req, res) => {
+  const { rows } = await query(
+    `SELECT id, nombre, clases_incluidas, precio, vigencia_dias, activo
+     FROM membresias ORDER BY activo DESC, clases_incluidas, id`
+  );
+  res.json(rows);
+}));
+
+function validarMembresia(body) {
+  const { nombre, clasesIncluidas, precio, vigenciaDias } = body || {};
+  const clases = Number(clasesIncluidas);
+  const monto = Number(precio);
+  const dias = Number(vigenciaDias);
+  if (!nombre?.trim()) return 'El nombre es obligatorio.';
+  if (!Number.isInteger(clases) || clases < 1) return 'Las clases incluidas deben ser un entero mayor a 0.';
+  if (!Number.isFinite(monto) || monto < 0) return 'El precio no es válido.';
+  if (!Number.isInteger(dias) || dias < 1) return 'La vigencia en días debe ser un entero mayor a 0.';
+  return null;
+}
+
+adminRouter.post('/membresias', asyncHandler(async (req, res) => {
+  const error = validarMembresia(req.body);
+  if (error) return res.status(400).json({ error });
+  const { nombre, clasesIncluidas, precio, vigenciaDias } = req.body;
+  const { rows } = await query(
+    `INSERT INTO membresias (nombre, tipo, vigencia_dias, clases_incluidas, precio)
+     VALUES ($1, 'por_clases', $2, $3, $4) RETURNING id`,
+    [nombre.trim(), Number(vigenciaDias), Number(clasesIncluidas), Number(precio)]
+  );
+  res.status(201).json({ id: rows[0].id });
+}));
+
+adminRouter.put('/membresias/:id', asyncHandler(async (req, res) => {
+  const error = validarMembresia(req.body);
+  if (error) return res.status(400).json({ error });
+  const { nombre, clasesIncluidas, precio, vigenciaDias, activo } = req.body;
+  const { rows } = await query(
+    `UPDATE membresias SET nombre = $1, clases_incluidas = $2, precio = $3, vigencia_dias = $4, activo = COALESCE($5, activo)
+     WHERE id = $6 RETURNING id`,
+    [nombre.trim(), Number(clasesIncluidas), Number(precio), Number(vigenciaDias), typeof activo === 'boolean' ? activo : null, req.params.id]
+  );
+  if (!rows[0]) return res.status(404).json({ error: 'Membresía no encontrada.' });
+  res.json({ ok: true });
+}));
+
 // ---------- Disciplinas: color y foto que se muestran en el landing (nombre/orden son fijos) ----------
 adminRouter.get('/disciplinas', asyncHandler(async (_req, res) => {
   const { rows } = await query(

@@ -8,15 +8,6 @@ import BookingModal from '../components/BookingModal.jsx';
 
 const DIAS = getWeekDays(7);
 
-// Membresías reales del estudio (precio por paquete de clases, individual y dúo).
-const MEMBRESIAS = [
-  { clases: 1, individual: 85, duo: 85 },
-  { clases: 4, individual: 320, duo: 320 },
-  { clases: 8, individual: 640, duo: 600 },
-  { clases: 12, individual: 840, duo: 800 },
-  { clases: 16, individual: 1040, duo: 1000 },
-  { clases: 20, individual: 1240, duo: 1200 },
-];
 const money = (n) => `$${n.toLocaleString('es-MX')}`;
 
 // Horario semanal recurrente real del estudio (coincide con las clases generadas en agenda).
@@ -43,6 +34,7 @@ export default function Catalogo() {
   const [coaches, setCoaches] = useState([]);
   const [destacados, setDestacados] = useState([]);
   const [clases, setClases] = useState([]);
+  const [membresias, setMembresias] = useState([]);
   const [hero, setHero] = useState(HERO_FALLBACK);
   const [actividadMes, setActividadMes] = useState(ACTIVIDAD_MES_FALLBACK);
   const [disciplinaId, setDisciplinaId] = useState(null);
@@ -56,6 +48,7 @@ export default function Catalogo() {
     apiGet('/disciplinas').then(setDisciplinas).catch(() => {});
     apiGet('/coaches').then(setCoaches).catch(() => {});
     apiGet('/destacados').then(setDestacados).catch(() => {});
+    apiGet('/membresias').then(setMembresias).catch(() => {});
     apiGet('/contenido/hero').then(setHero).catch(() => {});
     apiGet('/contenido/actividad-mes').then(setActividadMes).catch(() => {});
   }, []);
@@ -365,19 +358,18 @@ export default function Catalogo() {
           <div className="section-head center reveal">
             <span className="eyebrow">Membresías</span>
             <h2>Elige tu paquete</h2>
-            <p>Entre más clases, mejor precio por clase — el precio Dúo aplica por persona, si vienes con alguien más.</p>
+            <p>Clases de 1 hora · 7:00 a 10:00 am y 6:00 a 9:00 pm. Entre más clases, mejor precio por clase.</p>
           </div>
           <div className="pricing-table reveal reveal-1">
             <table>
               <thead>
-                <tr><th>Clases</th><th>Individual</th><th>Dúo c/u</th></tr>
+                <tr><th>Paquete</th><th>Precio</th></tr>
               </thead>
               <tbody>
-                {MEMBRESIAS.map((m) => (
-                  <tr key={m.clases}>
-                    <td>{m.clases} {m.clases === 1 ? 'clase' : 'clases'}</td>
-                    <td>{money(m.individual)}</td>
-                    <td>{money(m.duo)}</td>
+                {membresias.map((m) => (
+                  <tr key={m.id}>
+                    <td>{m.nombre}</td>
+                    <td>{money(Number(m.precio))}</td>
                   </tr>
                 ))}
               </tbody>
