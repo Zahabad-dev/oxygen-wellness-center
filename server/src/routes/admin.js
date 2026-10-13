@@ -5,6 +5,7 @@ import { query, withTransaction } from '../db.js';
 import { asyncHandler } from '../asyncHandler.js';
 import { uploadImage } from '../uploads.js';
 import { parseCumple } from '../cumpleanos.js';
+import { generarPassword, usuarioDesdeNombre } from '../credenciales.js';
 
 const ROLES_VALIDOS = ['administrador', 'recepcion', 'coach'];
 
@@ -185,28 +186,63 @@ adminRouter.put('/membresias/:id', asyncHandler(async (req, res) => {
   res.json({ ok: true });
 }));
 
-// ---------- Disciplinas: color y foto que se muestran en el landing (nombre/orden son fijos) ----------
+// ---------- Disciplinas (categorías de clase): crear, renombrar, color, foto. No se borran:
+// las clases ya programadas las referencian, así que se desactivan. ----------
 adminRouter.get('/disciplinas', asyncHandler(async (_req, res) => {
   const { rows } = await query(
-    `SELECT id, nombre, color, descripcion, imagen_url, activo FROM disciplinas ORDER BY nombre`
+    `SELECT id, nombre, color, descripcion, imagen_url, activo FROM disciplinas ORDER BY activo DESC, nombre`
   );
   res.json(rows);
 }));
 
+const COLOR_HEX = /^#[0-9a-fA-F]{6}$/;
+
+function validarDisciplina(body) {
+  const { nombre, color } = body || {};
+  if (!nombre?.trim()) return 'El nombre es obligatorio.';
+  if (nombre.trim().length > 40) return 'El nombre es demasiado largo (máximo 40 caracteres).';
+  if (!COLOR_HEX.test(color || '')) return 'El color debe ser un código hexadecimal como #818c68.';
+  return null;
+}
+
+adminRouter.post('/disciplinas', asyncHandler(async (req, res) => {
+  const error = validarDisciplina(req.body);
+  if (error) return res.status(400).json({ error });
+  const { nombre, color, descripcion, imagenUrl } = req.body;
+  try {
+    const { rows } = await query(
+      `INSERT INTO disciplinas (nombre, color, descripcion, imagen_url) VALUES ($1, $2, $3, $4) RETURNING id`,
+      [nombre.trim(), color, descripcion?.trim() || null, imagenUrl?.trim() || null]
+    );
+    res.status(201).json({ id: rows[0].id });
+  } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'Ya existe una disciplina con ese nombre.' });
+    throw err;
+  }
+}));
+
 adminRouter.put('/disciplinas/:id', asyncHandler(async (req, res) => {
-  const { color, descripcion, imagenUrl, activo } = req.body || {};
-  const { rows } = await query(
-    `UPDATE disciplinas SET
-       color = COALESCE($1, color),
-       descripcion = $2,
-       imagen_url = $3,
-       activo = COALESCE($4, activo)
-     WHERE id = $5
-     RETURNING id`,
-    [color || null, descripcion?.trim() || null, imagenUrl?.trim() || null, activo, req.params.id]
-  );
-  if (!rows[0]) return res.status(404).json({ error: 'Disciplina no encontrada.' });
-  res.json({ ok: true });
+  const error = validarDisciplina(req.body);
+  if (error) return res.status(400).json({ error });
+  const { nombre, color, descripcion, imagenUrl, activo } = req.body;
+  try {
+    const { rows } = await query(
+      `UPDATE disciplinas SET
+         nombre = $1,
+         color = $2,
+         descripcion = $3,
+         imagen_url = $4,
+         activo = COALESCE($5, activo)
+       WHERE id = $6
+       RETURNING id`,
+      [nombre.trim(), color, descripcion?.trim() || null, imagenUrl?.trim() || null, typeof activo === 'boolean' ? activo : null, req.params.id]
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'Disciplina no encontrada.' });
+    res.json({ ok: true });
+  } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'Ya existe otra disciplina con ese nombre.' });
+    throw err;
+  }
 }));
 
 // ---------- Salones (solo lectura por ahora — se crean vía seed/SQL) ----------
@@ -222,6 +258,12 @@ adminRouter.get('/salones', asyncHandler(async (_req, res) => {
 adminRouter.get('/coaches', asyncHandler(async (_req, res) => {
   const { rows } = await query(
     `SELECT c.id, c.nombre, c.bio, c.foto_url, c.activo,
+            (SELECT u.email FROM usuarios_internos u
+             WHERE u.coach_id = c.id AND u.rol_id = (SELECT id FROM roles WHERE nombre = 'coach')
+             ORDER BY u.id LIMIT 1) AS usuario,
+            (SELECT u.activo FROM usuarios_internos u
+             WHERE u.coach_id = c.id AND u.rol_id = (SELECT id FROM roles WHERE nombre = 'coach')
+             ORDER BY u.id LIMIT 1) AS acceso_activo,
             COALESCE(json_agg(json_build_object('id', d.id, 'nombre', d.nombre)) FILTER (WHERE d.id IS NOT NULL), '[]') AS disciplinas
      FROM coaches c
      LEFT JOIN coach_disciplinas cd ON cd.coach_id = c.id
@@ -279,6 +321,53 @@ adminRouter.put('/coaches/:id', asyncHandler(async (req, res) => {
 
 adminRouter.delete('/coaches/:id', asyncHandler(async (req, res) => {
   await query(`UPDATE coaches SET activo = false WHERE id = $1`, [req.params.id]);
+  res.json({ ok: true });
+}));
+
+// ---------- Acceso de un coach: genera (o restablece) usuario y contraseña. La contraseña solo
+// se devuelve aquí, una vez — en la base queda únicamente el hash. ----------
+adminRouter.post('/coaches/:id/acceso', asyncHandler(async (req, res) => {
+  const { rows: coachRows } = await query(`SELECT id, nombre FROM coaches WHERE id = $1`, [req.params.id]);
+  const coach = coachRows[0];
+  if (!coach) return res.status(404).json({ error: 'Coach no encontrado.' });
+
+  const { rows: rolRows } = await query(`SELECT id FROM roles WHERE nombre = 'coach'`);
+  const rolId = rolRows[0].id;
+  const password = generarPassword();
+  const hash = await bcrypt.hash(password, 10);
+
+  const { rows: existentes } = await query(
+    `SELECT id, email FROM usuarios_internos WHERE coach_id = $1 AND rol_id = $2 ORDER BY id LIMIT 1`,
+    [coach.id, rolId]
+  );
+
+  if (existentes[0]) {
+    await query(`UPDATE usuarios_internos SET password_hash = $1, activo = true WHERE id = $2`, [hash, existentes[0].id]);
+    return res.json({ usuario: existentes[0].email, password, nuevo: false });
+  }
+
+  const base = usuarioDesdeNombre(coach.nombre);
+  for (let n = 1; n <= 20; n += 1) {
+    const usuario = n === 1 ? base : `${base}${n}`;
+    try {
+      await query(
+        `INSERT INTO usuarios_internos (nombre, email, password_hash, rol_id, coach_id) VALUES ($1, $2, $3, $4, $5)`,
+        [coach.nombre, usuario, hash, rolId, coach.id]
+      );
+      return res.status(201).json({ usuario, password, nuevo: true });
+    } catch (err) {
+      if (err.code !== '23505') throw err;
+    }
+  }
+  res.status(409).json({ error: 'No se pudo generar un usuario único — créalo a mano en Usuarios.' });
+}));
+
+adminRouter.delete('/coaches/:id/acceso', asyncHandler(async (req, res) => {
+  await query(
+    `UPDATE usuarios_internos SET activo = false
+     WHERE coach_id = $1 AND rol_id = (SELECT id FROM roles WHERE nombre = 'coach')`,
+    [req.params.id]
+  );
   res.json({ ok: true });
 }));
 

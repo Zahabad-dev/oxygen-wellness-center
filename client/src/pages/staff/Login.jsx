@@ -32,8 +32,8 @@ export default function Login() {
       <h1>Oxigen Wellness Center</h1>
       <form onSubmit={onSubmit} className="card">
         <div className="field">
-          <label htmlFor="email">Correo</label>
-          <input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+          <label htmlFor="email">Usuario o correo</label>
+          <input id="email" type="text" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" autoCapitalize="none" />
         </div>
         <div className="field">
           <label htmlFor="password">Contraseña</label>

@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { apiGet, apiPut } from '../../lib/apiClient.js';
+import { apiGet, apiPost, apiPut } from '../../lib/apiClient.js';
 import AdminNav from '../../components/AdminNav.jsx';
 import ImageUploadField from '../../components/ImageUploadField.jsx';
 
+const FORM_NUEVA = { id: null, nombre: '', color: '#818c68', descripcion: '', imagenUrl: '', activo: true };
+
 export default function Disciplinas() {
   const [disciplinas, setDisciplinas] = useState([]);
-  const [form, setForm] = useState(null); // { id, color, descripcion, imagenUrl, activo }
+  const [form, setForm] = useState(null); // null = cerrado
   const [error, setError] = useState('');
   const [mensaje, setMensaje] = useState('');
   const [guardando, setGuardando] = useState(false);
@@ -18,6 +20,7 @@ export default function Disciplinas() {
 
   function editar(d) {
     setMensaje('');
+    setError('');
     setForm({
       id: d.id,
       nombre: d.nombre,
@@ -28,13 +31,23 @@ export default function Disciplinas() {
     });
   }
 
+  function nueva() {
+    setMensaje('');
+    setError('');
+    setForm(FORM_NUEVA);
+  }
+
   async function onSubmit(e) {
     e.preventDefault();
     setError('');
     setGuardando(true);
     try {
-      await apiPut(`/admin/disciplinas/${form.id}`, form);
-      setMensaje(`"${form.nombre}" actualizada.`);
+      if (form.id) {
+        await apiPut(`/admin/disciplinas/${form.id}`, form);
+      } else {
+        await apiPost('/admin/disciplinas', form);
+      }
+      setMensaje(form.id ? `"${form.nombre}" actualizada.` : `"${form.nombre}" creada — ya aparece al crear clases y asignar coaches.`);
       setForm(null);
       cargar();
     } catch (err) {
@@ -47,19 +60,28 @@ export default function Disciplinas() {
   return (
     <div className="page">
       <span className="eyebrow">Admin</span>
-      <h1>Disciplinas (clases)</h1>
+      <h1>Disciplinas (categorías de clase)</h1>
       <AdminNav />
 
       <p style={{ color: 'var(--ink-soft)', maxWidth: 560 }}>
-        La foto, el color y la descripción de cada disciplina tal como aparecen en el catálogo del sitio.
+        Las categorías de clase del sitio: nombre, color, foto y descripción. Crea las que necesites; si una ya no se
+        da, desactívala (no se borra porque hay clases que ya la usaron).
       </p>
 
       {error && <div className="alert error">{error}</div>}
       {mensaje && <div className="alert success">{mensaje}</div>}
 
+      {!form && (
+        <button className="btn btn-primary" type="button" style={{ marginBottom: 20 }} onClick={nueva}>Nueva disciplina</button>
+      )}
+
       {form && (
         <form onSubmit={onSubmit} className="card" style={{ marginBottom: 24, maxWidth: 520 }}>
-          <h3 style={{ marginTop: 0 }}>Editar "{form.nombre}"</h3>
+          <h3 style={{ marginTop: 0 }}>{form.id ? `Editar "${form.nombre}"` : 'Nueva disciplina'}</h3>
+          <div className="field">
+            <label htmlFor="d-nombre">Nombre</label>
+            <input id="d-nombre" required maxLength={40} value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} placeholder="Ej. Yoga" />
+          </div>
           <ImageUploadField
             id="imagenUrl"
             label="Foto de la disciplina"
@@ -80,7 +102,7 @@ export default function Disciplinas() {
             Activa (visible en el sitio)
           </label>
           <div style={{ display: 'flex', gap: 10 }}>
-            <button className="btn btn-primary" type="submit" disabled={guardando}>Guardar cambios</button>
+            <button className="btn btn-primary" type="submit" disabled={guardando}>{form.id ? 'Guardar cambios' : 'Crear disciplina'}</button>
             <button type="button" className="btn btn-secondary" onClick={() => setForm(null)}>Cancelar</button>
           </div>
         </form>
@@ -94,7 +116,7 @@ export default function Disciplinas() {
               {d.nombre} {!d.activo && <span className="pill critical">inactiva</span>}
             </h4>
             {d.descripcion && <p style={{ fontSize: 13, color: 'var(--ink-soft)' }}>{d.descripcion}</p>}
-            <p style={{ fontSize: 12.5, color: 'var(--ink-faint)' }}>{d.imagen_url || 'Sin foto propia — usa la del coach por defecto.'}</p>
+            <p style={{ fontSize: 12.5, color: 'var(--ink-faint)' }}>{d.imagen_url || 'Sin foto propia.'}</p>
             <button className="btn btn-secondary" onClick={() => editar(d)}>Editar</button>
           </div>
         ))}
