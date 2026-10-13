@@ -57,10 +57,12 @@ export default function Catalogo() {
     setCargando(true);
     const params = new URLSearchParams({ hasta: DIAS[DIAS.length - 1].iso });
     if (disciplinaId) params.set('disciplina', disciplinaId);
+    let obsoleta = false;
     apiGet(`/clases?${params.toString()}`)
-      .then((data) => { setClases(data); setError(''); })
-      .catch((err) => setError(err.message))
-      .finally(() => setCargando(false));
+      .then((data) => { if (!obsoleta) { setClases(data); setError(''); } })
+      .catch((err) => { if (!obsoleta) setError(err.message); })
+      .finally(() => { if (!obsoleta) setCargando(false); });
+    return () => { obsoleta = true; };
   }, [disciplinaId]);
 
   function elegirDisciplina(id) {
@@ -79,26 +81,34 @@ export default function Catalogo() {
   const colorPorNombre = Object.fromEntries(disciplinas.map((d) => [d.nombre, d.color]));
   const colorDe = (nombre) => colorPorNombre[nombre] || disciplineTheme(nombre).color;
 
-  // Parallax sutil del hero + aparición de secciones al hacer scroll.
+  // Parallax sutil del hero al hacer scroll.
   useEffect(() => {
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) return undefined;
 
     let ticking = false;
     function onScroll() {
-      if (reduceMotion || !heroBgRef.current || ticking) return;
+      if (!heroBgRef.current || ticking) return;
       ticking = true;
       requestAnimationFrame(() => {
         const y = Math.min(window.scrollY, 700);
-        heroBgRef.current.style.transform = `translateY(${y * 0.18}px)`;
+        if (heroBgRef.current) heroBgRef.current.style.transform = `translateY(${y * 0.18}px)`;
         ticking = false;
       });
     }
-    if (!reduceMotion) window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
+  // Aparición de secciones al hacer scroll. Se vuelve a correr cuando aparecen secciones que
+  // llegan por API (Destacados, Actividad del mes): si no, sus elementos .reveal nunca se
+  // observaban y se quedaban en opacity 0 (invisibles).
+  useEffect(() => {
     const els = landingRef.current?.querySelectorAll('.reveal') || [];
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduceMotion) {
       els.forEach((el) => el.classList.add('is-visible'));
-      return () => window.removeEventListener('scroll', onScroll);
+      return undefined;
     }
     const observer = new IntersectionObserver(
       (entries) => {
@@ -112,12 +122,8 @@ export default function Catalogo() {
       { threshold: 0.15 }
     );
     els.forEach((el) => observer.observe(el));
-
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      observer.disconnect();
-    };
-  }, []);
+    return () => observer.disconnect();
+  }, [destacados.length, actividadMes.activo]);
 
   return (
     <div className="landing" ref={landingRef}>

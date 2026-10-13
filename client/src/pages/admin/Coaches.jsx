@@ -63,8 +63,12 @@ export default function Coaches() {
 
   async function desactivar(coach) {
     if (!confirm(`¿Desactivar a ${coach.nombre}? Ya no aparecerá para asignar clases nuevas.`)) return;
-    await apiDelete(`/admin/coaches/${coach.id}`);
-    cargar();
+    try {
+      await apiDelete(`/admin/coaches/${coach.id}`);
+      cargar();
+    } catch (err) {
+      setError(err.message);
+    }
   }
 
   async function generarAcceso(coach) {
@@ -83,8 +87,12 @@ export default function Coaches() {
 
   async function quitarAcceso(coach) {
     if (!confirm(`¿Quitar el acceso de ${coach.nombre}? Ya no podrá iniciar sesión (puedes volver a generárselo).`)) return;
-    await apiDelete(`/admin/coaches/${coach.id}/acceso`);
-    cargar();
+    try {
+      await apiDelete(`/admin/coaches/${coach.id}/acceso`);
+      cargar();
+    } catch (err) {
+      setError(err.message);
+    }
   }
 
   function textoCredenciales(c) {
@@ -136,7 +144,7 @@ export default function Coaches() {
           id="foto"
           label="Foto del coach (opcional)"
           value={form.fotoUrl}
-          onChange={(fotoUrl) => setForm({ ...form, fotoUrl })}
+          onChange={(fotoUrl) => setForm((f) => ({ ...f, fotoUrl }))}
           hint="Medida recomendada: vertical, mínimo 900×1200 px (proporción 3:4)."
         />
         <div className="field">

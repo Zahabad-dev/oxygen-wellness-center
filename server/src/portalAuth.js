@@ -137,10 +137,33 @@ portalRouter.post('/registrar-membresia', asyncHandler(async (req, res) => {
     }
 
     let { rows: clienteRows } = await client.query(
-      `SELECT id, nombre, qr_token FROM clientes WHERE whatsapp = $1 AND nombre_normalizado(nombre) = nombre_normalizado($2)`,
+      `SELECT id, nombre, qr_token, (password_hash IS NOT NULL) AS tiene_acceso
+       FROM clientes WHERE whatsapp = $1 AND nombre_normalizado(nombre) = nombre_normalizado($2)`,
       [whatsapp.trim(), nombre.trim()]
     );
     let cliente = clienteRows[0];
+
+    if (cliente) {
+      // Este endpoint no pide sesión: si ya hay una cuenta con contraseña, aceptar otra aquí
+      // dejaría que cualquiera que conozca nombre y WhatsApp le cambie la contraseña y entre.
+      if (cliente.tiene_acceso) {
+        const err = new Error('Ya tienes una cuenta con esos datos — entra en "Mi cuenta". Si olvidaste tu contraseña, pídele a recepción que te la cambie.');
+        err.status = 409;
+        throw err;
+      }
+      // Una sola membresía pendiente de pago a la vez: cada registro libera ya su primera clase.
+      const { rows: pendientes } = await client.query(
+        `SELECT 1 FROM pagos p JOIN suscripciones s ON s.id = p.referencia_id AND p.referencia_tipo = 'membresia'
+         WHERE s.cliente_id = $1 AND p.estado = 'pendiente' LIMIT 1`,
+        [cliente.id]
+      );
+      if (pendientes[0]) {
+        const err = new Error('Ya tienes una membresía pendiente de confirmar en recepción — ahí te la activan.');
+        err.status = 409;
+        throw err;
+      }
+    }
+
     const hash = await bcrypt.hash(password, 10);
     if (!cliente) {
       const inserted = await client.query(

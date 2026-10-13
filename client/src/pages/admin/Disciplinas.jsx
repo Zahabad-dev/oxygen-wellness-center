@@ -24,6 +24,7 @@ export default function Disciplinas() {
     setForm({
       id: d.id,
       nombre: d.nombre,
+      nombreOriginal: d.nombre,
       color: d.color,
       descripcion: d.descripcion || '',
       imagenUrl: d.imagen_url || '',
@@ -40,6 +41,15 @@ export default function Disciplinas() {
   async function onSubmit(e) {
     e.preventDefault();
     setError('');
+    if (form.id && form.nombre.trim() !== form.nombreOriginal) {
+      const seguir = confirm(
+        `Ojo: la tabla de "Horarios" del sitio tiene los nombres de las clases escritos a mano. ` +
+        `Si cambias "${form.nombreOriginal}" por "${form.nombre.trim()}", esa tabla seguirá diciendo "${form.nombreOriginal}" ` +
+        `hasta que se actualice aparte (avísale a quien da mantenimiento al sitio).\n\n` +
+        `El resto del sitio (calendario, coaches, disciplinas) sí usará el nombre nuevo. ¿Guardar el cambio de nombre?`
+      );
+      if (!seguir) return;
+    }
     setGuardando(true);
     try {
       if (form.id) {
@@ -86,7 +96,7 @@ export default function Disciplinas() {
             id="imagenUrl"
             label="Foto de la disciplina"
             value={form.imagenUrl}
-            onChange={(imagenUrl) => setForm({ ...form, imagenUrl })}
+            onChange={(imagenUrl) => setForm((f) => ({ ...f, imagenUrl }))}
             hint="Medida recomendada: vertical, mínimo 900×1200 px (proporción 3:4)."
           />
           <div className="field">

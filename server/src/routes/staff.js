@@ -206,6 +206,9 @@ staffRouter.get('/seguimientos', asyncHandler(async (req, res) => {
 
 // ---------- Historial de reservas de un cliente: qué clases específicas ha reservado ----------
 staffRouter.get('/clientes/:id/reservas', asyncHandler(async (req, res) => {
+  if (!['administrador', 'recepcion'].includes(req.staff.rol)) {
+    return res.status(403).json({ error: 'No tienes permiso para ver esto.' });
+  }
   const { rows } = await query(
     `SELECT r.id AS reserva_id, r.estado, r.posicion_espera, r.creado_en,
             c.fecha, c.hora_inicio, c.estado AS clase_estado,
@@ -225,10 +228,14 @@ staffRouter.get('/clientes/:id/reservas', asyncHandler(async (req, res) => {
 
 // ---------- Clientes: lista + buscador (recepción y admin) ----------
 staffRouter.get('/clientes', asyncHandler(async (req, res) => {
+  if (!['administrador', 'recepcion'].includes(req.staff.rol)) {
+    return res.status(403).json({ error: 'No tienes permiso para ver esto.' });
+  }
   const buscar = (req.query.buscar || '').trim();
   // campoFecha: 'registro' (cuándo se creó el perfil) o 'primera_clase' (su primer check-in real).
   const { desde, hasta, campoFecha } = req.query;
   const columnaFecha = campoFecha === 'primera_clase' ? 'a.primera_clase' : 'cl.created_at';
+  const esFecha = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
 
   const params = [];
   const clausulas = [];
@@ -236,11 +243,11 @@ staffRouter.get('/clientes', asyncHandler(async (req, res) => {
     params.push(`%${buscar}%`);
     clausulas.push(`(cl.nombre ILIKE $${params.length} OR cl.whatsapp ILIKE $${params.length})`);
   }
-  if (desde) {
+  if (esFecha(desde)) {
     params.push(desde);
     clausulas.push(`${columnaFecha}::date >= $${params.length}`);
   }
-  if (hasta) {
+  if (esFecha(hasta)) {
     params.push(hasta);
     clausulas.push(`${columnaFecha}::date <= $${params.length}`);
   }

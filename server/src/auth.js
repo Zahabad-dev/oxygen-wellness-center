@@ -12,15 +12,31 @@ const cookieOpts = {
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
-export function requireAuth(req, res, next) {
+export async function requireAuth(req, res, next) {
   const token = req.cookies?.[config.cookieName];
   if (!token) return res.status(401).json({ error: 'No autenticado' });
+
+  let payload;
   try {
-    req.staff = jwt.verify(token, config.jwtSecret);
-    next();
+    payload = jwt.verify(token, config.jwtSecret);
   } catch {
-    res.status(401).json({ error: 'Sesión inválida o expirada' });
+    return res.status(401).json({ error: 'Sesión inválida o expirada' });
   }
+
+  // Una cuenta desactivada o borrada pierde el acceso de inmediato, no cuando vence su cookie
+  // (7 días). Si la base falla al verificar, se conserva el comportamiento anterior (la firma
+  // del JWT manda) para que un tropiezo de la base no deje fuera a todo el personal.
+  try {
+    const { rows } = await query(`SELECT activo FROM usuarios_internos WHERE id = $1`, [payload.id]);
+    if (!rows[0] || !rows[0].activo) {
+      return res.status(401).json({ error: 'Sesión inválida o expirada' });
+    }
+  } catch (err) {
+    console.error('[auth] No se pudo verificar el estado de la cuenta:', err.message);
+  }
+
+  req.staff = payload;
+  next();
 }
 
 export function requireRole(...roles) {

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { apiGet, apiPost, apiPut, apiDelete } from '../../lib/apiClient.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useTour } from '../../lib/useTour.js';
@@ -46,11 +46,17 @@ export default function Clientes() {
   const [historialCliente, setHistorialCliente] = useState(null);
   const [historial, setHistorial] = useState([]);
   const [historialCargando, setHistorialCargando] = useState(false);
+  const [historialError, setHistorialError] = useState('');
   const [fusion, setFusion] = useState(null); // null = cerrado
   const [expandido, setExpandido] = useState(null); // id del cliente con el desplegable abierto
   const tour = useTour('clientes', TOUR_STEPS);
+  // Contadores para descartar respuestas viejas: si llegan desordenadas, gana la última pedida.
+  const pedidoLista = useRef(0);
+  const pedidoHistorial = useRef(0);
+  const pedidoFusion = useRef(0);
 
   function cargar() {
+    const id = ++pedidoLista.current;
     setCargando(true);
     const qs = new URLSearchParams();
     if (buscar.trim()) qs.set('buscar', buscar.trim());
@@ -58,9 +64,9 @@ export default function Clientes() {
     if (fechaHasta) { qs.set('hasta', fechaHasta); qs.set('campoFecha', campoFecha); }
     const params = qs.toString() ? `?${qs.toString()}` : '';
     apiGet(`/staff/clientes${params}`)
-      .then((data) => { setClientes(data); setError(''); })
-      .catch((err) => setError(err.message))
-      .finally(() => setCargando(false));
+      .then((data) => { if (id === pedidoLista.current) { setClientes(data); setError(''); } })
+      .catch((err) => { if (id === pedidoLista.current) setError(err.message); })
+      .finally(() => { if (id === pedidoLista.current) setCargando(false); });
   }
 
   async function crearCliente(e) {
@@ -78,8 +84,14 @@ export default function Clientes() {
     }
   }
 
-  const clientesFiltrados = soloSinCuenta ? clientes.filter((c) => !c.tiene_acceso) : clientes;
-  const clientesOrdenados = [...clientesFiltrados].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
+  const clientesFiltrados = useMemo(
+    () => (soloSinCuenta ? clientes.filter((c) => !c.tiene_acceso) : clientes),
+    [clientes, soloSinCuenta]
+  );
+  const clientesOrdenados = useMemo(
+    () => [...clientesFiltrados].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })),
+    [clientesFiltrados]
+  );
 
   useEffect(() => {
     const t = setTimeout(cargar, 250);
@@ -100,17 +112,21 @@ export default function Clientes() {
   }
 
   async function editar(c) {
-    const data = await apiGet(`/admin/clientes/${c.id}`);
-    setForm({
-      id: data.id,
-      nombre: data.nombre,
-      whatsapp: data.whatsapp,
-      email: data.email || '',
-      notasInternas: data.notas_internas || '',
-      estado: data.estado,
-      cumpleMes: data.cumple_mes,
-      cumpleDia: data.cumple_dia,
-    });
+    try {
+      const data = await apiGet(`/admin/clientes/${c.id}`);
+      setForm({
+        id: data.id,
+        nombre: data.nombre,
+        whatsapp: data.whatsapp,
+        email: data.email || '',
+        notasInternas: data.notas_internas || '',
+        estado: data.estado,
+        cumpleMes: data.cumple_mes,
+        cumpleDia: data.cumple_dia,
+      });
+    } catch (err) {
+      alert(err.message);
+    }
   }
 
   async function guardarEdicion(e) {
@@ -125,19 +141,26 @@ export default function Clientes() {
     }
   }
 
-  function verHistorial(c) {
+  // silencioso = recargar la lista sin vaciarla (tras marcar asistencia); si no, se limpia al abrir
+  // otro cliente para no mostrar un instante las reservas del anterior (y poder marcar la fila equivocada).
+  function verHistorial(c, silencioso = false) {
+    const id = ++pedidoHistorial.current;
     setHistorialCliente(c);
-    setHistorialCargando(true);
+    setHistorialError('');
+    if (!silencioso) {
+      setHistorial([]);
+      setHistorialCargando(true);
+    }
     apiGet(`/staff/clientes/${c.id}/reservas`)
-      .then(setHistorial)
-      .catch(() => setHistorial([]))
-      .finally(() => setHistorialCargando(false));
+      .then((data) => { if (id === pedidoHistorial.current) setHistorial(data); })
+      .catch((err) => { if (id === pedidoHistorial.current) { setHistorial([]); setHistorialError(err.message); } })
+      .finally(() => { if (id === pedidoHistorial.current) setHistorialCargando(false); });
   }
 
   async function cambiarAsistencia(r, asistio) {
     try {
       await apiPut(`/admin/reservas/${r.reserva_id}/asistencia`, { asistio });
-      verHistorial(historialCliente);
+      verHistorial(historialCliente, true);
       cargar();
     } catch (err) {
       alert(err.message);
@@ -158,34 +181,54 @@ export default function Clientes() {
   function abrirFusion(c) {
     // Se busca por WhatsApp, no por nombre: si el duplicado tiene un nombre distinto (ej. "Iliana
     // Lazcano" vs "Iliana Mireya Lazcano Vázquez"), buscar por nombre nunca lo iba a encontrar.
-    setFusion({ origen: c, buscar: c.whatsapp, candidatos: [], cargando: true, fusionando: false });
-    buscarCandidatos(c.whatsapp);
+    // marcados = los perfiles que el admin confirma que son la misma persona que "origen"
+    // (una familia que comparte teléfono aparece en la búsqueda pero NO se fusiona sola).
+    setFusion({ origen: c, buscar: c.whatsapp, candidatos: [], cargando: true, fusionando: false, marcados: [] });
   }
 
-  function buscarCandidatos(texto) {
-    setFusion((f) => (f ? { ...f, buscar: texto, cargando: true } : f));
-    apiGet(`/staff/clientes?buscar=${encodeURIComponent(texto.trim())}`)
-      .then((data) => setFusion((f) => (f ? { ...f, candidatos: data, cargando: false } : f)))
-      .catch(() => setFusion((f) => (f ? { ...f, candidatos: [], cargando: false } : f)));
+  const fusionBuscar = fusion?.buscar;
+  const fusionOrigenId = fusion?.origen?.id;
+  useEffect(() => {
+    if (fusionOrigenId == null) {
+      pedidoFusion.current += 1;
+      return undefined;
+    }
+    const id = ++pedidoFusion.current;
+    setFusion((f) => (f ? { ...f, cargando: true } : f));
+    const t = setTimeout(() => {
+      apiGet(`/staff/clientes?buscar=${encodeURIComponent((fusionBuscar || '').trim())}`)
+        .then((data) => { if (id === pedidoFusion.current) setFusion((f) => (f ? { ...f, candidatos: data, cargando: false } : f)); })
+        .catch(() => { if (id === pedidoFusion.current) setFusion((f) => (f ? { ...f, candidatos: [], cargando: false } : f)); });
+    }, 250);
+    return () => clearTimeout(t);
+  }, [fusionBuscar, fusionOrigenId]);
+
+  function marcarMisma(c) {
+    setFusion((f) => {
+      const ya = f.marcados.some((m) => m.id === c.id);
+      return { ...f, marcados: ya ? f.marcados.filter((m) => m.id !== c.id) : [...f.marcados, { id: c.id, nombre: c.nombre, whatsapp: c.whatsapp }] };
+    });
   }
 
   async function conservarEste(mantener) {
-    const grupo = [fusion.origen, ...fusion.candidatos.filter((c) => c.id !== fusion.origen.id)];
+    const grupo = [{ id: fusion.origen.id, nombre: fusion.origen.nombre, whatsapp: fusion.origen.whatsapp }, ...fusion.marcados];
     const otros = grupo.filter((c) => c.id !== mantener.id);
-    if (otros.length === 0) return;
+    if (otros.length === 0 || !grupo.some((c) => c.id === mantener.id)) return;
     if (!confirm(`Vas a conservar a "${mantener.nombre}" (${mantener.whatsapp}) y fusionar en él a: ${otros.map((o) => `"${o.nombre}" (${o.whatsapp})`).join(', ')}.\n\nSe combinan sus reservas, historial y datos — los perfiles fusionados se borran. No se puede deshacer. ¿Continuar?`)) return;
 
     setFusion((f) => ({ ...f, fusionando: true }));
+    let hechas = 0;
     try {
       for (const o of otros) {
         await apiPost(`/admin/clientes/${mantener.id}/fusionar`, { eliminarId: o.id });
+        hechas += 1;
       }
-      setMensaje(`Se fusionaron ${otros.length} perfil${otros.length === 1 ? '' : 'es'} en "${mantener.nombre}".`);
+      setMensaje(`Se fusionaron ${hechas} perfil${hechas === 1 ? '' : 'es'} en "${mantener.nombre}".`);
+    } catch (err) {
+      alert(`${err.message}${hechas ? `\n\nAntes del error se alcanzaron a fusionar ${hechas} de ${otros.length}.` : ''}`);
+    } finally {
       setFusion(null);
       cargar();
-    } catch (err) {
-      alert(err.message);
-      setFusion((f) => ({ ...f, fusionando: false }));
     }
   }
 
@@ -389,17 +432,18 @@ export default function Clientes() {
 
       {historialCliente && (
         <div className="modal-backdrop" onClick={() => setHistorialCliente(null)}>
-          <div className="modal-panel" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 520 }}>
+          <div className="modal-panel" role="dialog" aria-modal="true" aria-label={`Reservas de ${historialCliente.nombre}`} onClick={(e) => e.stopPropagation()} style={{ maxWidth: 520 }}>
             <button className="modal-close" onClick={() => setHistorialCliente(null)} aria-label="Cerrar">✕</button>
             <h3 style={{ marginTop: 0 }}>Reservas de {historialCliente.nombre}</h3>
 
             {historialCargando && <div className="page-loading">Cargando…</div>}
-            {!historialCargando && historial.length === 0 && (
+            {historialError && <div className="alert error">{historialError}</div>}
+            {!historialCargando && !historialError && historial.length === 0 && (
               <p style={{ color: 'var(--ink-soft)', fontSize: 13.5 }}>Todavía no tiene reservas.</p>
             )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 420, overflowY: 'auto' }}>
-              {historial.map((r) => (
+              {!historialCargando && historial.map((r) => (
                 <div
                   key={r.reserva_id}
                   style={{
@@ -435,19 +479,20 @@ export default function Clientes() {
 
       {fusion && (
         <div className="modal-backdrop" onClick={() => !fusion.fusionando && setFusion(null)}>
-          <div className="modal-panel" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 560 }}>
+          <div className="modal-panel" role="dialog" aria-modal="true" aria-label="Fusionar duplicados" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 560 }}>
             <button className="modal-close" onClick={() => setFusion(null)} aria-label="Cerrar" disabled={fusion.fusionando}>✕</button>
             <h3 style={{ marginTop: 0 }}>Fusionar duplicados</h3>
             <p style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
-              Busca los perfiles que crees que son la misma persona (por nombre o WhatsApp) y elige cuál conservar —
-              los demás se fusionan en él (se combinan sus reservas e historial) y se borran. No se puede deshacer.
+              Marca con la casilla solo los perfiles que SÍ son la misma persona que este (un mismo WhatsApp puede
+              ser de familiares distintos: esos no se marcan). Luego elige cuál conservar — los marcados se fusionan
+              en él (se combinan sus reservas e historial) y se borran. No se puede deshacer.
             </p>
             <div className="field">
               <label htmlFor="fusion-buscar">Buscar por nombre o WhatsApp</label>
               <input
                 id="fusion-buscar"
                 value={fusion.buscar}
-                onChange={(e) => buscarCandidatos(e.target.value)}
+                onChange={(e) => setFusion((f) => ({ ...f, buscar: e.target.value }))}
                 disabled={fusion.fusionando}
               />
             </div>
@@ -456,28 +501,45 @@ export default function Clientes() {
 
             {!fusion.cargando && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 360, overflowY: 'auto' }}>
-                {[fusion.origen, ...fusion.candidatos.filter((c) => c.id !== fusion.origen.id)].map((c) => (
-                  <div
-                    key={c.id}
-                    style={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8,
-                      border: c.id === fusion.origen.id ? '1px solid var(--accent)' : '1px solid var(--line)',
-                      borderRadius: 'var(--radius-sm)', padding: '8px 12px',
-                    }}
-                  >
-                    <span>
-                      <strong>{c.nombre}</strong> · {c.whatsapp}
-                      {c.id === fusion.origen.id && <span className="pill accent" style={{ marginLeft: 6 }}>este</span>}
-                      <br />
-                      <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>
-                        {c.tiene_acceso ? 'tiene acceso' : 'sin acceso'} · {c.reservas_total ?? '—'} reservas · registrado {new Date(c.created_at).toLocaleDateString('es-MX')}
+                {[fusion.origen, ...fusion.candidatos.filter((c) => c.id !== fusion.origen.id)].map((c) => {
+                  const esOrigen = c.id === fusion.origen.id;
+                  const marcado = fusion.marcados.some((m) => m.id === c.id);
+                  const enGrupo = esOrigen || marcado;
+                  return (
+                    <div
+                      key={c.id}
+                      style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8,
+                        border: enGrupo ? '1px solid var(--accent)' : '1px solid var(--line)',
+                        borderRadius: 'var(--radius-sm)', padding: '8px 12px',
+                      }}
+                    >
+                      <span>
+                        <strong>{c.nombre}</strong> · {c.whatsapp}
+                        {esOrigen && <span className="pill accent" style={{ marginLeft: 6 }}>este</span>}
+                        <br />
+                        <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>
+                          {c.tiene_acceso ? 'tiene acceso' : 'sin acceso'} · {c.reservas_total ?? '—'} reservas · registrado {new Date(c.created_at).toLocaleDateString('es-MX')}
+                        </span>
+                        {!esOrigen && (
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, marginTop: 4 }}>
+                            <input type="checkbox" checked={marcado} onChange={() => marcarMisma(c)} disabled={fusion.fusionando} />
+                            Es la misma persona
+                          </label>
+                        )}
                       </span>
-                    </span>
-                    <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => conservarEste(c)} disabled={fusion.fusionando}>
-                      Conservar este
-                    </button>
-                  </div>
-                ))}
+                      <button
+                        className="btn btn-secondary"
+                        style={{ padding: '5px 10px', fontSize: 12.5 }}
+                        onClick={() => conservarEste(c)}
+                        disabled={fusion.fusionando || !enGrupo || fusion.marcados.length === 0}
+                        title={!enGrupo ? 'Marca "Es la misma persona" para poder conservarlo' : undefined}
+                      >
+                        Conservar este
+                      </button>
+                    </div>
+                  );
+                })}
                 {fusion.candidatos.filter((c) => c.id !== fusion.origen.id).length === 0 && (
                   <p style={{ color: 'var(--ink-soft)', fontSize: 13.5 }}>No se encontró ningún otro perfil parecido — puede que no haya duplicado.</p>
                 )}

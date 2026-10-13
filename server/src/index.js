@@ -59,6 +59,11 @@ if (existsSync(clientDist)) {
 // (ej. la base de datos no responde) tira todo el proceso en vez de responder 500.
 // eslint-disable-next-line no-unused-vars
 app.use((err, _req, res, _next) => {
+  // Errores "esperados" lanzados con err.status 4xx (ej. "no encontrado", "ya existe") llegan aquí
+  // desde handlers async; antes todos salían como 500 genérico y el usuario no veía el motivo real.
+  if (Number.isInteger(err.status) && err.status >= 400 && err.status < 500 && err.message) {
+    return res.status(err.status).json({ error: err.message });
+  }
   console.error('[server] Error no capturado:', err);
   res.status(500).json({ error: 'Error interno del servidor.' });
 });

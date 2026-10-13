@@ -23,6 +23,7 @@ export default function CumpleanosFields({ idPrefix, mes, dia, onChangeMes, onCh
         </select>
         <select
           id={`${idPrefix}-dia`}
+          aria-label="Día de cumpleaños"
           value={dia ?? ''}
           onChange={(e) => onChangeDia(e.target.value ? Number(e.target.value) : null)}
           style={{ flex: 1 }}

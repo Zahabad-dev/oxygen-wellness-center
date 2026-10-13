@@ -52,8 +52,12 @@ export default function Destacados() {
 
   async function eliminar(d) {
     if (!confirm(`¿Eliminar "${d.titulo}" de Destacados?`)) return;
-    await apiDelete(`/admin/destacados/${d.id}`);
-    cargar();
+    try {
+      await apiDelete(`/admin/destacados/${d.id}`);
+      cargar();
+    } catch (err) {
+      setError(err.message);
+    }
   }
 
   return (
@@ -84,7 +88,7 @@ export default function Destacados() {
           id="imagenUrl"
           label="Imagen del destacado"
           value={form.imagenUrl}
-          onChange={(imagenUrl) => setForm({ ...form, imagenUrl })}
+          onChange={(imagenUrl) => setForm((f) => ({ ...f, imagenUrl }))}
           hint="Medida recomendada: vertical, mínimo 900×1200 px (proporción 3:4)."
         />
         <div className="field">

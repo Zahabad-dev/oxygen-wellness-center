@@ -410,11 +410,13 @@ adminRouter.get('/clases/:id/reservas', asyncHandler(async (req, res) => {
 // ---------- Corregir asistencia a mano (recepción olvidó pasar el QR, o lo marcó por error) ----------
 adminRouter.put('/reservas/:id/asistencia', asyncHandler(async (req, res) => {
   const { asistio } = req.body || {};
-  const { rows } = await query(`SELECT id, cliente_id, estado FROM reservas WHERE id = $1`, [req.params.id]);
-  const reserva = rows[0];
-  if (!reserva) return res.status(404).json({ error: 'Reserva no encontrada.' });
+  if (typeof asistio !== 'boolean') return res.status(400).json({ error: 'Falta indicar si asistió o no.' });
 
-  await withTransaction(async (client) => {
+  const encontrada = await withTransaction(async (client) => {
+    const { rows } = await client.query(`SELECT id, cliente_id, estado FROM reservas WHERE id = $1 FOR UPDATE`, [req.params.id]);
+    const reserva = rows[0];
+    if (!reserva) return false;
+
     if (asistio) {
       const { rows: existe } = await client.query(`SELECT id FROM checkins WHERE reserva_id = $1`, [req.params.id]);
       if (!existe[0]) {
@@ -433,8 +435,10 @@ adminRouter.put('/reservas/:id/asistencia', asyncHandler(async (req, res) => {
        VALUES ('reserva', $1, $2, 'staff', $3, $4::jsonb)`,
       [req.params.id, asistio ? 'asistencia_marcada_manual' : 'asistencia_quitada_manual', req.staff.id, JSON.stringify({ clienteId: reserva.cliente_id })]
     );
+    return true;
   });
 
+  if (!encontrada) return res.status(404).json({ error: 'Reserva no encontrada.' });
   res.json({ ok: true });
 }));
 

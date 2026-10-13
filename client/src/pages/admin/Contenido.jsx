@@ -80,7 +80,7 @@ export default function Contenido() {
             id="imagenUrl"
             label="Foto del hero"
             value={hero.imagenUrl}
-            onChange={(imagenUrl) => setHero({ ...hero, imagenUrl })}
+            onChange={(imagenUrl) => setHero((h) => ({ ...h, imagenUrl }))}
             previewHeight={220}
             hint="Medida recomendada: vertical, mínimo 1600×2000 px — cubre toda la pantalla, de celular a computadora."
           />
@@ -123,7 +123,7 @@ export default function Contenido() {
             id="act-imagenUrl"
             label="Foto tipo flyer del evento"
             value={actividad.imagenUrl}
-            onChange={(imagenUrl) => setActividad({ ...actividad, imagenUrl })}
+            onChange={(imagenUrl) => setActividad((a) => ({ ...a, imagenUrl }))}
             previewHeight={200}
             hint="Medida recomendada: horizontal, mínimo 1200×900 px (proporción 4:3)."
           />
