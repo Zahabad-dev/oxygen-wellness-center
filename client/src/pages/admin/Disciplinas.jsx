@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { apiGet, apiPost, apiPut } from '../../lib/apiClient.js';
 import AdminNav from '../../components/AdminNav.jsx';
 import ImageUploadField from '../../components/ImageUploadField.jsx';
@@ -17,6 +17,15 @@ export default function Disciplinas() {
   }
 
   useEffect(cargar, []);
+
+  // El formulario se abre arriba y la lista está abajo: al abrirlo (o cambiar a otra disciplina)
+  // se lleva a la vista, si no parece que "Editar" no hizo nada.
+  const formRef = useRef(null);
+  const formAbierto = form !== null;
+  const formId = form?.id;
+  useEffect(() => {
+    if (formAbierto) formRef.current?.scrollIntoView({ block: 'start' });
+  }, [formAbierto, formId]);
 
   function editar(d) {
     setMensaje('');
@@ -86,7 +95,7 @@ export default function Disciplinas() {
       )}
 
       {form && (
-        <form onSubmit={onSubmit} className="card" style={{ marginBottom: 24, maxWidth: 520 }}>
+        <form ref={formRef} onSubmit={onSubmit} className="card" style={{ marginBottom: 24, maxWidth: 520 }}>
           <h3 style={{ marginTop: 0 }}>{form.id ? `Editar "${form.nombre}"` : 'Nueva disciplina'}</h3>
           <div className="field">
             <label htmlFor="d-nombre">Nombre</label>

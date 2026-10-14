@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { apiGet, apiPost, apiPut, apiDelete } from '../../lib/apiClient.js';
 import AdminNav from '../../components/AdminNav.jsx';
 import ImageUploadField from '../../components/ImageUploadField.jsx';
@@ -10,6 +10,7 @@ export default function Destacados() {
   const [form, setForm] = useState(FORM_VACIO);
   const [error, setError] = useState('');
   const [guardando, setGuardando] = useState(false);
+  const formRef = useRef(null);
 
   function cargar() {
     apiGet('/admin/destacados').then(setDestacados).catch((err) => setError(err.message));
@@ -29,6 +30,7 @@ export default function Destacados() {
       orden: d.orden,
       activo: d.activo,
     });
+    formRef.current?.scrollIntoView({ block: 'start' });
   }
 
   async function onSubmit(e) {
@@ -70,7 +72,7 @@ export default function Destacados() {
         Eventos y talleres especiales que aparecen en el carrusel del inicio, entre el hero y las disciplinas.
       </p>
 
-      <form onSubmit={onSubmit} className="card" style={{ marginBottom: 24, maxWidth: 560 }}>
+      <form ref={formRef} onSubmit={onSubmit} className="card" style={{ marginBottom: 24, maxWidth: 560 }}>
         <h3 style={{ marginTop: 0 }}>{form.id ? 'Editar destacado' : 'Nuevo destacado'}</h3>
         <div className="field">
           <label htmlFor="titulo">Título</label>

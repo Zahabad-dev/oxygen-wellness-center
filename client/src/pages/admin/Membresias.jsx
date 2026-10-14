@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { apiGet, apiPost, apiPut } from '../../lib/apiClient.js';
 import AdminNav from '../../components/AdminNav.jsx';
 
@@ -11,6 +11,7 @@ export default function Membresias() {
   const [error, setError] = useState('');
   const [mensaje, setMensaje] = useState('');
   const [guardando, setGuardando] = useState(false);
+  const formRef = useRef(null);
 
   function cargar() {
     apiGet('/admin/membresias').then(setMembresias).catch((err) => setError(err.message));
@@ -27,6 +28,7 @@ export default function Membresias() {
       precio: m.precio,
       vigenciaDias: m.vigencia_dias,
     });
+    formRef.current?.scrollIntoView({ block: 'start' });
   }
 
   async function onSubmit(e) {
@@ -77,7 +79,7 @@ export default function Membresias() {
       {error && <div className="alert error">{error}</div>}
       {mensaje && <div className="alert success">{mensaje}</div>}
 
-      <form onSubmit={onSubmit} className="card" style={{ marginBottom: 24, maxWidth: 480 }}>
+      <form ref={formRef} onSubmit={onSubmit} className="card" style={{ marginBottom: 24, maxWidth: 480 }}>
         <h3 style={{ marginTop: 0 }}>{form.id ? 'Editar membresía' : 'Nueva membresía'}</h3>
         <div className="field">
           <label htmlFor="m-nombre">Nombre</label>

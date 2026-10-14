@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { apiGet, apiPost, apiPut, apiDelete } from '../../lib/apiClient.js';
 import AdminNav from '../../components/AdminNav.jsx';
 
@@ -11,6 +11,7 @@ export default function Usuarios() {
   const [form, setForm] = useState(FORM_VACIO);
   const [error, setError] = useState('');
   const [guardando, setGuardando] = useState(false);
+  const formRef = useRef(null);
 
   function cargar() {
     apiGet('/admin/usuarios').then(setUsuarios).catch((err) => setError(err.message));
@@ -23,6 +24,7 @@ export default function Usuarios() {
 
   function editar(u) {
     setForm({ id: u.id, nombre: u.nombre, email: u.email, password: '', rol: u.rol, coachId: u.coach_id || '' });
+    formRef.current?.scrollIntoView({ block: 'start' });
   }
 
   async function onSubmit(e) {
@@ -58,7 +60,7 @@ export default function Usuarios() {
       <h1>Usuarios de staff</h1>
       <AdminNav />
 
-      <form onSubmit={onSubmit} className="card" style={{ marginBottom: 24, maxWidth: 480 }}>
+      <form ref={formRef} onSubmit={onSubmit} className="card" style={{ marginBottom: 24, maxWidth: 480 }}>
         <h3 style={{ marginTop: 0 }}>{form.id ? `Editar acceso — ${form.email}` : 'Nuevo acceso'}</h3>
         <div className="field">
           <label htmlFor="nombre">Nombre</label>

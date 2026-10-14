@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { apiGet, apiPost, apiPut, apiDelete } from '../../lib/apiClient.js';
 import AdminNav from '../../components/AdminNav.jsx';
 import ImageUploadField from '../../components/ImageUploadField.jsx';
@@ -11,8 +11,14 @@ export default function Coaches() {
   const [form, setForm] = useState(FORM_VACIO);
   const [error, setError] = useState('');
   const [guardando, setGuardando] = useState(false);
-  const [credenciales, setCredenciales] = useState(null);
+  // Todo lo de "acceso" se muestra DENTRO de la tarjeta del coach donde se hizo clic: el formulario
+  // y sus mensajes están arriba de la página y, si el resultado salía allá, desde abajo parecía
+  // que el botón no hacía nada.
+  const [credenciales, setCredenciales] = useState(null); // { coachId, nombre, usuario, password }
+  const [aviso, setAviso] = useState(null); // { coachId, tipo: 'ok' | 'error', texto }
+  const [trabajando, setTrabajando] = useState(null); // coachId con una acción en curso
   const [copiado, setCopiado] = useState(false);
+  const formRef = useRef(null);
 
   function cargar() {
     apiGet('/admin/coaches').then(setCoaches).catch((err) => setError(err.message));
@@ -33,6 +39,7 @@ export default function Coaches() {
   }
 
   function editar(coach) {
+    setError('');
     setForm({
       id: coach.id,
       nombre: coach.nombre,
@@ -40,6 +47,7 @@ export default function Coaches() {
       fotoUrl: coach.foto_url || '',
       disciplinaIds: coach.disciplinas.map((d) => d.id),
     });
+    formRef.current?.scrollIntoView({ block: 'start' });
   }
 
   async function onSubmit(e) {
@@ -63,35 +71,49 @@ export default function Coaches() {
 
   async function desactivar(coach) {
     if (!confirm(`¿Desactivar a ${coach.nombre}? Ya no aparecerá para asignar clases nuevas.`)) return;
+    setAviso(null);
+    setTrabajando(coach.id);
     try {
       await apiDelete(`/admin/coaches/${coach.id}`);
       cargar();
     } catch (err) {
-      setError(err.message);
+      setAviso({ coachId: coach.id, tipo: 'error', texto: err.message });
+    } finally {
+      setTrabajando(null);
     }
   }
 
   async function generarAcceso(coach) {
     const yaTiene = Boolean(coach.usuario);
     if (yaTiene && !confirm(`¿Restablecer la contraseña de ${coach.nombre}? La anterior deja de funcionar.`)) return;
-    setError('');
+    setAviso(null);
+    setCredenciales(null);
     setCopiado(false);
+    setTrabajando(coach.id);
     try {
       const data = await apiPost(`/admin/coaches/${coach.id}/acceso`, {});
-      setCredenciales({ nombre: coach.nombre, usuario: data.usuario, password: data.password });
+      setCredenciales({ coachId: coach.id, nombre: coach.nombre, usuario: data.usuario, password: data.password });
       cargar();
     } catch (err) {
-      setError(err.message);
+      setAviso({ coachId: coach.id, tipo: 'error', texto: err.message });
+    } finally {
+      setTrabajando(null);
     }
   }
 
   async function quitarAcceso(coach) {
     if (!confirm(`¿Quitar el acceso de ${coach.nombre}? Ya no podrá iniciar sesión (puedes volver a generárselo).`)) return;
+    setAviso(null);
+    setCredenciales(null);
+    setTrabajando(coach.id);
     try {
       await apiDelete(`/admin/coaches/${coach.id}/acceso`);
+      setAviso({ coachId: coach.id, tipo: 'ok', texto: 'Acceso quitado. Ya no puede iniciar sesión.' });
       cargar();
     } catch (err) {
-      setError(err.message);
+      setAviso({ coachId: coach.id, tipo: 'error', texto: err.message });
+    } finally {
+      setTrabajando(null);
     }
   }
 
@@ -104,7 +126,7 @@ export default function Coaches() {
       await navigator.clipboard.writeText(textoCredenciales(credenciales));
       setCopiado(true);
     } catch {
-      setError('No se pudo copiar automáticamente — selecciona el texto y cópialo a mano.');
+      setAviso({ coachId: credenciales.coachId, tipo: 'error', texto: 'No se pudo copiar automáticamente — selecciona el texto y cópialo a mano.' });
     }
   }
 
@@ -114,23 +136,7 @@ export default function Coaches() {
       <h1>Coaches</h1>
       <AdminNav />
 
-      {credenciales && (
-        <div className="card" style={{ marginBottom: 24, maxWidth: 520, borderColor: 'var(--accent)' }}>
-          <h3 style={{ marginTop: 0 }}>Acceso de {credenciales.nombre}</h3>
-          <p style={{ fontSize: 13, color: 'var(--ink-soft)', marginTop: -4 }}>
-            Guarda o envía estos datos ahora — la contraseña no se vuelve a mostrar (si se pierde, se genera una nueva).
-          </p>
-          <pre style={{ background: 'var(--surface-2)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', fontSize: 13.5, whiteSpace: 'pre-wrap', userSelect: 'all' }}>
-            {textoCredenciales(credenciales)}
-          </pre>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button className="btn btn-primary" type="button" onClick={copiarCredenciales}>{copiado ? 'Copiado' : 'Copiar'}</button>
-            <button className="btn btn-secondary" type="button" onClick={() => setCredenciales(null)}>Listo, ya los guardé</button>
-          </div>
-        </div>
-      )}
-
-      <form onSubmit={onSubmit} className="card" style={{ marginBottom: 24, maxWidth: 520 }}>
+      <form ref={formRef} onSubmit={onSubmit} className="card" style={{ marginBottom: 24, maxWidth: 520 }}>
         <h3 style={{ marginTop: 0 }}>{form.id ? 'Editar coach' : 'Nuevo coach'}</h3>
         <div className="field">
           <label htmlFor="nombre">Nombre</label>
@@ -186,13 +192,33 @@ export default function Coaches() {
                 : 'Sin acceso al sistema todavía.'}
             </p>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button className="btn btn-secondary" onClick={() => editar(c)}>Editar</button>
-              <button className="btn btn-secondary" onClick={() => generarAcceso(c)}>
-                {c.usuario ? 'Restablecer contraseña' : 'Generar acceso'}
+              <button className="btn btn-secondary" type="button" onClick={() => editar(c)}>Editar</button>
+              <button className="btn btn-secondary" type="button" onClick={() => generarAcceso(c)} disabled={trabajando === c.id}>
+                {trabajando === c.id ? 'Generando…' : c.usuario ? 'Restablecer contraseña' : 'Generar acceso'}
               </button>
-              {c.usuario && c.acceso_activo && <button className="btn btn-ghost" onClick={() => quitarAcceso(c)}>Quitar acceso</button>}
-              {c.activo && <button className="btn btn-ghost" onClick={() => desactivar(c)}>Desactivar</button>}
+              {c.usuario && c.acceso_activo && <button className="btn btn-ghost" type="button" onClick={() => quitarAcceso(c)} disabled={trabajando === c.id}>Quitar acceso</button>}
+              {c.activo && <button className="btn btn-ghost" type="button" onClick={() => desactivar(c)} disabled={trabajando === c.id}>Desactivar</button>}
             </div>
+
+            {aviso?.coachId === c.id && (
+              <div className={`alert ${aviso.tipo === 'ok' ? 'success' : 'error'}`} style={{ marginTop: 12, marginBottom: 0 }}>{aviso.texto}</div>
+            )}
+
+            {credenciales?.coachId === c.id && (
+              <div style={{ marginTop: 12, padding: 12, border: '1.5px solid var(--accent)', borderRadius: 'var(--radius-sm)' }}>
+                <strong style={{ fontSize: 14 }}>Acceso de {credenciales.nombre}</strong>
+                <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', margin: '4px 0 8px' }}>
+                  Guarda o envía estos datos ahora — la contraseña no se vuelve a mostrar (si se pierde, se genera una nueva).
+                </p>
+                <pre style={{ background: 'var(--surface-2)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', fontSize: 13, whiteSpace: 'pre-wrap', userSelect: 'all', margin: '0 0 10px' }}>
+                  {textoCredenciales(credenciales)}
+                </pre>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button className="btn btn-primary" type="button" onClick={copiarCredenciales}>{copiado ? 'Copiado' : 'Copiar'}</button>
+                  <button className="btn btn-secondary" type="button" onClick={() => setCredenciales(null)}>Listo, ya los guardé</button>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
